@@ -44,7 +44,7 @@ const ToolPage = () => {
   // UI states
   const [showDebug, setShowDebug] = useState<boolean>(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState<boolean>(false);
-  const [showSignatureDialog, setShowPasswordDialog] = useState<boolean>(false);
+  const [showSignatureDialog, setShowSignatureDialog] = useState<boolean>(false);
   const [password, setPassword] = useState<string>('');
   const [signatureData, setSignatureData] = useState<string>('');
   
