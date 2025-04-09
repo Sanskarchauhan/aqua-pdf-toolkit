@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import ToolDebug from '@/components/debug/ToolDebug';
 
 interface ToolInfo {
   id: string;
@@ -30,6 +31,54 @@ const ToolPage = () => {
   const [processing, setProcessing] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [completed, setCompleted] = useState<boolean>(false);
+  const [showDebug, setShowDebug] = useState<boolean>(false);
+  
+  // Enable debug mode with key combination (Ctrl+Alt+D)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.altKey && e.key === 'd') {
+        setShowDebug(prev => !prev);
+        toast({
+          title: showDebug ? "Debug mode disabled" : "Debug mode enabled",
+          description: "Press Ctrl+Alt+D to toggle debug panel",
+        });
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showDebug, toast]);
+  
+  // Run a test function to verify functionality
+  const runTestFunction = () => {
+    console.log("Running test function for tool:", toolId);
+    console.log("Current files:", files);
+    
+    // Test the processing simulation
+    setProcessing(true);
+    setProgress(0);
+    
+    const testInterval = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = prev + 10;
+        if (newProgress >= 100) {
+          clearInterval(testInterval);
+          setProcessing(false);
+          setCompleted(true);
+          
+          toast({
+            title: "Test completed successfully",
+            description: `Test for ${toolId} has completed. Function is working.`,
+          });
+          
+          return 100;
+        }
+        return newProgress;
+      });
+    }, 200);
+  };
   
   // Tool definitions
   const tools: Record<string, ToolInfo> = {
@@ -146,11 +195,17 @@ const ToolPage = () => {
   
   // Handle file upload
   const handleFilesAdded = (newFiles: File[]) => {
-    setFiles(newFiles);
-    toast({
-      title: "Files added successfully",
-      description: `${newFiles.length} ${newFiles.length === 1 ? 'file' : 'files'} added.`,
-    });
+    // Using setTimeout to avoid React state update during render
+    setTimeout(() => {
+      setFiles(prevFiles => {
+        const updatedFiles = [...prevFiles, ...newFiles];
+        toast({
+          title: "Files added successfully",
+          description: `${newFiles.length} ${newFiles.length === 1 ? 'file' : 'files'} added.`,
+        });
+        return updatedFiles;
+      });
+    }, 0);
   };
   
   // Process files
@@ -273,6 +328,19 @@ const ToolPage = () => {
                   Process Another File
                 </Button>
               </div>
+            </div>
+          )}
+          
+          {showDebug && (
+            <div className="border-t p-6">
+              <ToolDebug 
+                toolId={toolId || ''}
+                files={files}
+                processing={processing}
+                progress={progress}
+                completed={completed}
+                onTest={runTestFunction}
+              />
             </div>
           )}
         </div>

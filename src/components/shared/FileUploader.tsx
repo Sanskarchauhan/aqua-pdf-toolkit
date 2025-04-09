@@ -41,7 +41,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         } else {
           toast({
             title: "Invalid file",
-            description: `${file.name} is not a valid PDF file.`,
+            description: `${file.name} is not a valid file format.`,
             variant: "destructive",
           });
         }
@@ -59,8 +59,13 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         if (newProgress >= 100) {
           clearInterval(interval);
           setUploading(false);
-          setFiles(prevFiles => [...prevFiles, ...acceptedFiles]);
-          onFilesAdded(acceptedFiles);
+          
+          // Use setTimeout to avoid React state updates during render
+          setTimeout(() => {
+            setFiles(prevFiles => [...prevFiles, ...acceptedFiles]);
+            onFilesAdded(acceptedFiles);
+          }, 0);
+          
           return 100;
         }
         return newProgress;
@@ -84,16 +89,16 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     <div className={className}>
       <div 
         {...getRootProps()} 
-        className={`file-drop-zone ${isDragActive ? 'active' : ''}`}
+        className={`border-2 border-dashed rounded-lg p-8 text-center ${isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/20'} transition-colors cursor-pointer`}
       >
         <input {...getInputProps()} />
         
-        <UploadCloud size={40} className="text-primary mb-4" />
+        <UploadCloud size={40} className="text-primary mb-4 mx-auto" />
         
         <div className="text-center">
           <h3 className="font-medium text-lg">Drop your files here</h3>
           <p className="text-muted-foreground mb-4">
-            or click to browse (PDF, max {maxSize / 1048576}MB)
+            or click to browse (max {maxSize / 1048576}MB)
           </p>
           <Button type="button">Select Files</Button>
         </div>
