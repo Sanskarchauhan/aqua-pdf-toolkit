@@ -1,20 +1,37 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FileUploader from '@/components/shared/FileUploader';
 import { Button } from '@/components/ui/button';
 import {
   FileText, FileUp, Wand2, Layers, Pencil, ScanLine, 
-  FileSignature, Lock, Camera, ArrowRight
+  FileSignature, Lock, Camera, ArrowRight,
+  Trash2, Plus, File
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  getWorkspace, 
+  addToWorkspace, 
+  removeFromWorkspace, 
+  clearWorkspace,
+  WorkspaceItem 
+} from '@/utils/workspaceManager';
 
 const Workspace = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [files, setFiles] = useState<File[]>([]);
   const [selectedTool, setSelectedTool] = useState('');
+  const [workspaceItems, setWorkspaceItems] = useState<WorkspaceItem[]>([]);
+  
+  // Load workspace on component mount
+  useEffect(() => {
+    const items = getWorkspace();
+    setWorkspaceItems(items);
+  }, []);
 
   // Handle file upload
   const handleFilesAdded = (newFiles: File[]) => {
@@ -92,8 +109,45 @@ const Workspace = () => {
     });
   };
 
-  // Process files with selected tool
-  const handleProcess = () => {
+  // Save to workspace
+  const handleSaveToWorkspace = () => {
+    if (files.length === 0) {
+      toast({
+        title: "No files added",
+        description: "Please add at least one file to save to workspace.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    addToWorkspace(files, selectedTool);
+    
+    // Refresh workspace items
+    setWorkspaceItems(getWorkspace());
+    
+    // Clear the files and selected tool after saving to workspace
+    setFiles([]);
+    setSelectedTool('');
+  };
+  
+  // Remove item from workspace
+  const handleRemoveItem = (id: string) => {
+    removeFromWorkspace(id);
+    setWorkspaceItems(getWorkspace());
+  };
+  
+  // Clear entire workspace
+  const handleClearWorkspace = () => {
+    if (workspaceItems.length === 0) return;
+    
+    if (confirm('Are you sure you want to clear your entire workspace? This cannot be undone.')) {
+      clearWorkspace();
+      setWorkspaceItems([]);
+    }
+  };
+  
+  // Process with selected tool
+  const handleProcessWithTool = () => {
     if (!selectedTool) {
       toast({
         title: "No tool selected",
@@ -111,19 +165,37 @@ const Workspace = () => {
       });
       return;
     }
-
-    toast({
-      title: "Processing started",
-      description: "Your files are being processed. This may take a moment.",
-    });
-
-    // Simulate processing
-    setTimeout(() => {
+    
+    // Navigate to the selected tool page with these files
+    // In a real implementation, we would pass the files through state management
+    // For now, we'll just redirect and use workspace functionality later
+    navigate(`/tools/${selectedTool}`);
+  };
+  
+  // Use workspace item
+  const handleUseWorkspaceItem = (item: WorkspaceItem) => {
+    if (item.toolId) {
+      // Navigate to the tool page
+      navigate(`/tools/${item.toolId}`);
+    } else {
+      // Set the files but no tool selected
+      setFiles(item.files);
+      setSelectedTool('');
+      
       toast({
-        title: "Processing complete",
-        description: "Your files have been processed successfully.",
+        title: "Files loaded from workspace",
+        description: "Please select a tool to process these files.",
       });
-    }, 2000);
+    }
+  };
+  
+  // Format date for display
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
 
   return (
@@ -144,14 +216,83 @@ const Workspace = () => {
               <FileUploader onFilesAdded={handleFilesAdded} className="mb-4" />
               
               {files.length > 0 && (
-                <div className="text-center mt-6">
-                  <Button onClick={handleProcess} className="gap-2">
+                <div className="text-center mt-6 flex justify-center gap-4">
+                  <Button onClick={handleProcessWithTool} className="gap-2">
                     Process Files
                     <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={handleSaveToWorkspace}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Save to Workspace
                   </Button>
                 </div>
               )}
             </div>
+            
+            {/* Workspace items */}
+            {workspaceItems.length > 0 && (
+              <div className="bg-card border rounded-lg p-6 mt-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-medium">Your Workspace</h2>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleClearWorkspace}
+                    className="text-xs h-8"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Clear All
+                  </Button>
+                </div>
+                
+                <div className="space-y-4">
+                  {workspaceItems.map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="border rounded-md p-4 flex justify-between items-center"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="bg-primary/10 p-2 rounded-full">
+                          <File className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {item.files.length} {item.files.length === 1 ? 'file' : 'files'}
+                            {item.toolId ? ` - ${item.toolId}` : ''}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Added on {formatDate(item.dateAdded)}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          className="h-8" 
+                          onClick={() => handleUseWorkspaceItem(item)}
+                        >
+                          Use
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8"
+                          onClick={() => handleRemoveItem(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right column - Tool selection */}

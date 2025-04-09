@@ -12,7 +12,12 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import ToolDebug from '@/components/debug/ToolDebug';
+import ToolCard from '@/components/tools/ToolCard';
+import PasswordDialog from '@/components/shared/PasswordDialog';
+import SignatureCanvas from '@/components/shared/SignatureCanvas';
+import { processFile } from '@/utils/fileProcessing';
 
+// Tool info type
 interface ToolInfo {
   id: string;
   name: string;
@@ -20,6 +25,8 @@ interface ToolInfo {
   icon: React.ElementType;
   acceptedFormats: Record<string, string[]>;
   maxFiles: number;
+  requiresPassword?: boolean;
+  requiresSignature?: boolean;
 }
 
 const ToolPage = () => {
@@ -27,12 +34,19 @@ const ToolPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  // File and processing states
   const [files, setFiles] = useState<File[]>([]);
   const [processing, setProcessing] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [completed, setCompleted] = useState<boolean>(false);
-  const [showDebug, setShowDebug] = useState<boolean>(false);
   const [resultFile, setResultFile] = useState<File | null>(null);
+  
+  // UI states
+  const [showDebug, setShowDebug] = useState<boolean>(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState<boolean>(false);
+  const [showSignatureDialog, setShowPasswordDialog] = useState<boolean>(false);
+  const [password, setPassword] = useState<string>('');
+  const [signatureData, setSignatureData] = useState<string>('');
   
   // Enable debug mode with key combination (Ctrl+Alt+D)
   useEffect(() => {
@@ -53,9 +67,18 @@ const ToolPage = () => {
   }, [showDebug, toast]);
   
   // Run a test function to verify functionality
-  const runTestFunction = () => {
+  const runTestFunction = async () => {
     console.log("Running test function for tool:", toolId);
     console.log("Current files:", files);
+    
+    if (files.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please add at least one file to test.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Test the processing simulation
     setProcessing(true);
@@ -66,24 +89,33 @@ const ToolPage = () => {
         const newProgress = prev + 10;
         if (newProgress >= 100) {
           clearInterval(testInterval);
-          setProcessing(false);
-          setCompleted(true);
           
-          // Create a mock result file when test completes
-          const mockResultContent = 'This is a test result file';
-          const mockBlob = new Blob([mockResultContent], { type: 'application/pdf' });
-          
-          const mockResultFile = new File([mockBlob], `result-${toolId}.pdf`, { 
-            type: 'application/pdf',
-            lastModified: Date.now()
-          });
-          
-          setResultFile(mockResultFile);
-          
-          toast({
-            title: "Test completed successfully",
-            description: `Test for ${toolId} has completed. Function is working.`,
-          });
+          // Process asynchronously after the progress is complete
+          setTimeout(async () => {
+            try {
+              const options = toolInfo?.requiresPassword ? { password } : 
+                          toolInfo?.requiresSignature ? { signature: signatureData } : undefined;
+              
+              const result = await processFile(toolId || '', files, options);
+              setResultFile(result);
+              setProcessing(false);
+              setCompleted(true);
+              
+              toast({
+                title: "Test completed successfully",
+                description: `Test for ${toolId} has completed. Function is working.`,
+              });
+            } catch (error) {
+              setProcessing(false);
+              console.error("Test processing error:", error);
+              
+              toast({
+                title: "Test failed",
+                description: `Error during test: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                variant: "destructive",
+              });
+            }
+          }, 500);
           
           return 100;
         }
@@ -121,6 +153,20 @@ const ToolPage = () => {
         description: `Your file ${resultFile.name} is downloading.`,
       });
     }, 100);
+  };
+  
+  // Password handlers
+  const handlePasswordConfirm = (enteredPassword: string) => {
+    setPassword(enteredPassword);
+    setShowPasswordDialog(false);
+    handleProcess();
+  };
+  
+  // Signature handlers
+  const handleSignatureSave = (data: string) => {
+    setSignatureData(data);
+    setShowSignatureDialog(false);
+    handleProcess();
   };
   
   // Tool definitions
@@ -199,6 +245,7 @@ const ToolPage = () => {
       icon: Unlock,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
+      requiresPassword: true,
     },
     'protect-pdf': {
       id: 'protect-pdf',
@@ -207,6 +254,7 @@ const ToolPage = () => {
       icon: Lock,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
+      requiresPassword: true,
     },
     'sign-pdf': {
       id: 'sign-pdf',
@@ -215,6 +263,7 @@ const ToolPage = () => {
       icon: FileSignature,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
+      requiresSignature: true,
     },
   };
   
@@ -252,7 +301,7 @@ const ToolPage = () => {
   };
   
   // Process files
-  const handleProcess = () => {
+  const handleProcess = async () => {
     if (files.length === 0) {
       toast({
         title: "No files selected",
@@ -262,36 +311,54 @@ const ToolPage = () => {
       return;
     }
     
+    // Check if we need to show the password dialog
+    if (toolInfo.requiresPassword && !password) {
+      setShowPasswordDialog(true);
+      return;
+    }
+    
+    // Check if we need to show the signature dialog
+    if (toolInfo.requiresSignature && !signatureData) {
+      setShowSignatureDialog(true);
+      return;
+    }
+    
     setProcessing(true);
     setProgress(0);
     
-    // Simulate processing
+    // Simulate processing with progress
     const interval = setInterval(() => {
       setProgress(prev => {
         const newProgress = prev + 5;
         if (newProgress >= 100) {
           clearInterval(interval);
-          setProcessing(false);
-          setCompleted(true);
           
-          // Create a result file when processing completes
-          // In real implementation, this would be the actual processed file
-          const resultContent = 'This is the processed file content';
-          const resultBlob = new Blob([resultContent], { type: 'application/pdf' });
-          
-          // Name the file based on the tool used
-          const fileName = `${toolId}-result.pdf`;
-          const processedFile = new File([resultBlob], fileName, { 
-            type: 'application/pdf',
-            lastModified: Date.now()
-          });
-          
-          setResultFile(processedFile);
-          
-          toast({
-            title: "Processing complete",
-            description: "Your files have been processed successfully.",
-          });
+          // Process asynchronously after the progress is complete
+          setTimeout(async () => {
+            try {
+              const options = toolInfo.requiresPassword ? { password } : 
+                          toolInfo.requiresSignature ? { signature: signatureData } : undefined;
+              
+              const result = await processFile(toolId, files, options);
+              setResultFile(result);
+              setProcessing(false);
+              setCompleted(true);
+              
+              toast({
+                title: "Processing complete",
+                description: "Your files have been processed successfully.",
+              });
+            } catch (error) {
+              setProcessing(false);
+              console.error("Processing error:", error);
+              
+              toast({
+                title: "Processing failed",
+                description: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                variant: "destructive",
+              });
+            }
+          }, 500);
           
           return 100;
         }
@@ -306,6 +373,8 @@ const ToolPage = () => {
     setCompleted(false);
     setProgress(0);
     setResultFile(null);
+    setPassword('');
+    setSignatureData('');
   };
   
   // Helper to get an icon component
@@ -338,70 +407,55 @@ const ToolPage = () => {
           </div>
         </div>
         
-        <div className="bg-card border rounded-lg mt-6">
-          {!completed ? (
-            <div className="p-6">
-              <h2 className="text-xl font-medium mb-4">Upload Files</h2>
-              <FileUploader
-                onFilesAdded={handleFilesAdded}
-                accept={toolInfo.acceptedFormats}
-                maxFiles={toolInfo.maxFiles}
-                className="mb-4"
-              />
-              
-              {files.length > 0 && (
-                <div className="mt-6 flex justify-center">
-                  <Button 
-                    onClick={handleProcess} 
-                    disabled={processing}
-                    className="min-w-[150px]"
-                  >
-                    {processing ? "Processing..." : "Process Files"}
-                  </Button>
-                </div>
-              )}
-              
-              {processing && (
-                <div className="mt-8 animate-fade-in">
-                  <p className="text-center mb-2">Processing your files...</p>
-                  <Progress value={progress} className="h-2" />
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="p-6 text-center animate-fade-in">
-              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileCheck className="h-8 w-8 text-primary" />
-              </div>
-              <h2 className="text-xl font-bold mb-2">Processing Complete!</h2>
-              <p className="text-muted-foreground mb-6">
-                Your files have been processed successfully.
-              </p>
-              <div className="flex justify-center gap-4">
-                <Button onClick={handleDownload}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Result
-                </Button>
-                <Button variant="outline" onClick={handleReset}>
-                  Process Another File
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {showDebug && (
-            <div className="border-t p-6">
-              <ToolDebug 
-                toolId={toolId || ''}
-                files={files}
-                processing={processing}
-                progress={progress}
-                completed={completed}
-                onTest={runTestFunction}
-              />
-            </div>
-          )}
-        </div>
+        <ToolCard
+          toolId={toolId || ''}
+          files={files}
+          processing={processing}
+          progress={progress}
+          completed={completed}
+          resultFile={resultFile}
+          onProcess={handleProcess}
+          onDownload={handleDownload}
+          onReset={handleReset}
+        >
+          <FileUploader
+            onFilesAdded={handleFilesAdded}
+            accept={toolInfo.acceptedFormats}
+            maxFiles={toolInfo.maxFiles}
+            className="mb-4"
+          />
+        </ToolCard>
+        
+        {/* Password Dialog */}
+        <PasswordDialog
+          isOpen={showPasswordDialog}
+          title={toolId === 'unlock-pdf' ? 'Enter PDF Password' : 'Set PDF Password'}
+          description={
+            toolId === 'unlock-pdf' 
+              ? 'Enter the password to unlock this PDF file.'
+              : 'Set a password to protect your PDF file.'
+          }
+          onClose={() => setShowPasswordDialog(false)}
+          onConfirm={handlePasswordConfirm}
+        />
+        
+        {/* Signature Dialog */}
+        <SignatureCanvas
+          isOpen={showSignatureDialog}
+          onClose={() => setShowSignatureDialog(false)}
+          onSave={handleSignatureSave}
+        />
+        
+        {showDebug && (
+          <ToolDebug 
+            toolId={toolId || ''}
+            files={files}
+            processing={processing}
+            progress={progress}
+            completed={completed}
+            onTest={runTestFunction}
+          />
+        )}
         
         {/* How it works section */}
         <div className="mt-12">
