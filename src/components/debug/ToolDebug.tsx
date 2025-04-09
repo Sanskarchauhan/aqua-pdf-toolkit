@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check, Bug } from 'lucide-react';
+import { Check, Bug, Download } from 'lucide-react';
 
 interface ToolDebugProps {
   toolId: string;

@@ -32,6 +32,7 @@ const ToolPage = () => {
   const [progress, setProgress] = useState<number>(0);
   const [completed, setCompleted] = useState<boolean>(false);
   const [showDebug, setShowDebug] = useState<boolean>(false);
+  const [resultFile, setResultFile] = useState<File | null>(null);
   
   // Enable debug mode with key combination (Ctrl+Alt+D)
   useEffect(() => {
@@ -68,6 +69,17 @@ const ToolPage = () => {
           setProcessing(false);
           setCompleted(true);
           
+          // Create a mock result file when test completes
+          const mockResultContent = 'This is a test result file';
+          const mockBlob = new Blob([mockResultContent], { type: 'application/pdf' });
+          
+          const mockResultFile = new File([mockBlob], `result-${toolId}.pdf`, { 
+            type: 'application/pdf',
+            lastModified: Date.now()
+          });
+          
+          setResultFile(mockResultFile);
+          
           toast({
             title: "Test completed successfully",
             description: `Test for ${toolId} has completed. Function is working.`,
@@ -78,6 +90,37 @@ const ToolPage = () => {
         return newProgress;
       });
     }, 200);
+  };
+  
+  // Handle download of result file
+  const handleDownload = () => {
+    if (!resultFile) {
+      toast({
+        title: "No result file",
+        description: "There is no result file to download.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create a URL for the file and trigger download
+    const fileURL = URL.createObjectURL(resultFile);
+    const a = document.createElement('a');
+    a.href = fileURL;
+    a.download = resultFile.name;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(fileURL);
+      
+      toast({
+        title: "Download started",
+        description: `Your file ${resultFile.name} is downloading.`,
+      });
+    }, 100);
   };
   
   // Tool definitions
@@ -231,6 +274,20 @@ const ToolPage = () => {
           setProcessing(false);
           setCompleted(true);
           
+          // Create a result file when processing completes
+          // In real implementation, this would be the actual processed file
+          const resultContent = 'This is the processed file content';
+          const resultBlob = new Blob([resultContent], { type: 'application/pdf' });
+          
+          // Name the file based on the tool used
+          const fileName = `${toolId}-result.pdf`;
+          const processedFile = new File([resultBlob], fileName, { 
+            type: 'application/pdf',
+            lastModified: Date.now()
+          });
+          
+          setResultFile(processedFile);
+          
           toast({
             title: "Processing complete",
             description: "Your files have been processed successfully.",
@@ -248,6 +305,7 @@ const ToolPage = () => {
     setFiles([]);
     setCompleted(false);
     setProgress(0);
+    setResultFile(null);
   };
   
   // Helper to get an icon component
@@ -320,7 +378,7 @@ const ToolPage = () => {
                 Your files have been processed successfully.
               </p>
               <div className="flex justify-center gap-4">
-                <Button>
+                <Button onClick={handleDownload}>
                   <Download className="h-4 w-4 mr-2" />
                   Download Result
                 </Button>
