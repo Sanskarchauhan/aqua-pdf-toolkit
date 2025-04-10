@@ -221,12 +221,16 @@ export const unlockPdf = async (file: File, password?: string): Promise<File> =>
     const arrayBuffer = await readFileAsArrayBuffer(file);
     
     // Try to load the PDF with the password
-    const pdfDoc = await PDFDocument.load(arrayBuffer, {
+    const loadOptions: any = {
       ignoreEncryption: false,
-      // Use the password option correctly based on PDF-lib's LoadOptions
       updateMetadata: false,
-      ...(password ? { password } : {}),
-    });
+    };
+    
+    if (password) {
+      loadOptions.password = password;
+    }
+    
+    const pdfDoc = await PDFDocument.load(arrayBuffer, loadOptions);
     
     // If we get here, the password worked or the PDF wasn't encrypted
     const pdfBytes = await pdfDoc.save(); // Save without encryption
@@ -244,10 +248,14 @@ export const protectPdf = async (file: File, password: string): Promise<File> =>
     const arrayBuffer = await readFileAsArrayBuffer(file);
     const pdfDoc = await PDFDocument.load(arrayBuffer);
     
-    // Set the password for the PDF using the correct pdf-lib options
-    const encryptedBytes = await pdfDoc.save({
-      // Use the correct options for PDF encryption
-      encryption: {
+    // Use pdf-lib's save options with encryption
+    const saveOptions: any = {
+      // pdf-lib supports encryption options directly
+    };
+    
+    // Add encryption options
+    if (password) {
+      saveOptions.encryption = {
         userPassword: password,
         ownerPassword: password,
         permissions: {
@@ -259,8 +267,10 @@ export const protectPdf = async (file: File, password: string): Promise<File> =>
           contentAccessibility: true,
           documentAssembly: false,
         },
-      },
-    });
+      };
+    }
+    
+    const encryptedBytes = await pdfDoc.save(saveOptions);
     
     return createResultFile(encryptedBytes, 'protect-pdf', file.name);
   } catch (error) {
