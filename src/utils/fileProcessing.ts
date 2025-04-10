@@ -34,25 +34,96 @@ export const createResultFile = (
   });
 };
 
-// Compress PDF function using pdf-lib
+// Compress PDF function using pdf-lib - improved implementation
 export const compressPdf = async (file: File): Promise<File> => {
   try {
     const arrayBuffer = await readFileAsArrayBuffer(file);
     const pdfDoc = await PDFDocument.load(arrayBuffer);
     
-    // Save with compression settings
-    const compressedBytes = await pdfDoc.save({
-      useObjectStreams: true,
+    // Get original size for comparison
+    const originalSize = file.size;
+    
+    // Create a new PDF document with the same pages
+    const compressedPdf = await PDFDocument.create();
+    
+    // Copy pages but with optimization settings
+    const pages = await compressedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+    pages.forEach(page => {
+      compressedPdf.addPage(page);
     });
     
-    return createResultFile(
+    // Save with compression settings - these are the best options available in pdf-lib
+    const compressedBytes = await compressedPdf.save({
+      useObjectStreams: true,
+      addDefaultPage: false,
+      objectsPerTick: 100,
+    });
+    
+    // Create the compressed file
+    const result = createResultFile(
       compressedBytes, 
       'compress-pdf', 
       file.name
     );
+    
+    // Log compression ratio
+    const newSize = result.size;
+    const compressionRatio = ((originalSize - newSize) / originalSize * 100).toFixed(2);
+    console.log(`Compressed PDF: ${originalSize} -> ${newSize} bytes (${compressionRatio}% reduction)`);
+    
+    return result;
   } catch (error) {
     console.error('Error compressing PDF:', error);
     throw new Error('Failed to compress PDF');
+  }
+};
+
+// Delete pages from PDF
+export const deletePages = async (file: File, pageNumbers: number[]): Promise<File> => {
+  try {
+    const arrayBuffer = await readFileAsArrayBuffer(file);
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    
+    // Sort page numbers in descending order to avoid index shifting
+    const sortedPageNumbers = [...pageNumbers].sort((a, b) => b - a);
+    
+    // Remove pages
+    for (const pageNumber of sortedPageNumbers) {
+      if (pageNumber >= 0 && pageNumber < pdfDoc.getPageCount()) {
+        pdfDoc.removePage(pageNumber);
+      }
+    }
+    
+    const pdfBytes = await pdfDoc.save();
+    return createResultFile(pdfBytes, 'delete-pages', file.name);
+  } catch (error) {
+    console.error('Error deleting PDF pages:', error);
+    throw new Error('Failed to delete PDF pages');
+  }
+};
+
+// Extract pages from PDF
+export const extractPages = async (file: File, pageNumbers: number[]): Promise<File> => {
+  try {
+    const arrayBuffer = await readFileAsArrayBuffer(file);
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    
+    // Create a new PDF document
+    const extractedPdf = await PDFDocument.create();
+    
+    // Copy selected pages
+    for (const pageNumber of pageNumbers) {
+      if (pageNumber >= 0 && pageNumber < pdfDoc.getPageCount()) {
+        const [page] = await extractedPdf.copyPages(pdfDoc, [pageNumber]);
+        extractedPdf.addPage(page);
+      }
+    }
+    
+    const pdfBytes = await extractedPdf.save();
+    return createResultFile(pdfBytes, 'extract-pages', `extracted-pages-${file.name}`);
+  } catch (error) {
+    console.error('Error extracting PDF pages:', error);
+    throw new Error('Failed to extract PDF pages');
   }
 };
 
@@ -562,6 +633,15 @@ export const processFile = async (toolId: string, files: File[], options?: any):
       case 'rotate-pdf':
         return await rotatePdf(files[0]);
         
+      case 'delete-pages':
+        return await deletePages(files[0], options?.pages || [0]);
+        
+      case 'extract-pages':
+        return await extractPages(files[0], options?.pages || [0]);
+        
+      case 'edit-pdf':
+        return await editPdf(files[0], options?.edits || []);
+        
       default:
         // For unimplemented tools, create a simple result file
         return createResultFile(`Processed with ${toolId}`, toolId, 'result.pdf');
@@ -574,6 +654,37 @@ export const processFile = async (toolId: string, files: File[], options?: any):
       variant: "destructive",
     });
     throw error;
+  }
+};
+
+// Edit PDF - adding a simple text annotation
+export const editPdf = async (file: File, edits: Array<{type: string, content: string, page: number, x: number, y: number}>): Promise<File> => {
+  try {
+    const arrayBuffer = await readFileAsArrayBuffer(file);
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    
+    // Get the default font
+    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    
+    // Apply edits
+    for (const edit of edits) {
+      if (edit.type === 'text' && edit.page >= 0 && edit.page < pdfDoc.getPageCount()) {
+        const page = pdfDoc.getPage(edit.page);
+        page.drawText(edit.content, {
+          x: edit.x,
+          y: edit.y,
+          size: 12,
+          font: helveticaFont,
+          color: rgb(0, 0, 0)
+        });
+      }
+    }
+    
+    const pdfBytes = await pdfDoc.save();
+    return createResultFile(pdfBytes, 'edit-pdf', file.name);
+  } catch (error) {
+    console.error('Error editing PDF:', error);
+    throw new Error('Failed to edit PDF');
   }
 };
 

@@ -15,8 +15,8 @@ import PasswordDialog from '@/components/shared/PasswordDialog';
 import SignatureCanvas from '@/components/shared/SignatureCanvas';
 import { processFile, downloadFile } from '@/utils/fileProcessing';
 import PDFViewer from '@/components/shared/PDFViewer';
+import PDFEditor from '@/components/shared/PDFEditor';
 
-// Tool info type
 interface ToolInfo {
   id: string;
   name: string;
@@ -26,6 +26,7 @@ interface ToolInfo {
   maxFiles: number;
   requiresPassword?: boolean;
   requiresSignature?: boolean;
+  isEditTool?: boolean;
 }
 
 const ToolPage = () => {
@@ -33,21 +34,20 @@ const ToolPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // File and processing states
   const [files, setFiles] = useState<File[]>([]);
   const [processing, setProcessing] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [completed, setCompleted] = useState<boolean>(false);
   const [resultFile, setResultFile] = useState<File | null>(null);
   
-  // UI states
   const [showDebug, setShowDebug] = useState<boolean>(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState<boolean>(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState<boolean>(false);
   const [password, setPassword] = useState<string>('');
   const [signatureData, setSignatureData] = useState<string>('');
+  const [selectedPages, setSelectedPages] = useState<number[]>([]);
+  const [edits, setEdits] = useState<Array<{type: string, content: string, page: number, x: number, y: number}>>([]);
   
-  // Enable debug mode with key combination (Ctrl+Alt+D)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.altKey && e.key === 'd') {
@@ -65,9 +65,7 @@ const ToolPage = () => {
     };
   }, [showDebug, toast]);
   
-  // Handle file upload
   const handleFilesAdded = (newFiles: File[]) => {
-    // Using setTimeout to avoid React state update during render
     setTimeout(() => {
       setFiles(prevFiles => {
         const updatedFiles = [...prevFiles, ...newFiles];
@@ -80,7 +78,48 @@ const ToolPage = () => {
     }, 0);
   };
   
-  // Process files
+  const handlePdfEdits = async (edits: Array<{type: string, content: string, page: number, x: number, y: number}>) => {
+    if (files.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please add a file to edit.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setEdits(edits);
+    handleProcess();
+  };
+  
+  const handleDeletePages = async (pageNumbers: number[]) => {
+    if (files.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please add a file to edit.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSelectedPages(pageNumbers);
+    handleProcess();
+  };
+  
+  const handleExtractPages = async (pageNumbers: number[]) => {
+    if (files.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please add a file to edit.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSelectedPages(pageNumbers);
+    handleProcess();
+  };
+  
   const handleProcess = async () => {
     if (files.length === 0) {
       toast({
@@ -91,13 +130,11 @@ const ToolPage = () => {
       return;
     }
     
-    // Check if we need to show the password dialog
     if (toolInfo?.requiresPassword && !password) {
       setShowPasswordDialog(true);
       return;
     }
     
-    // Check if we need to show the signature dialog
     if (toolInfo?.requiresSignature && !signatureData) {
       setShowSignatureDialog(true);
       return;
@@ -106,18 +143,35 @@ const ToolPage = () => {
     setProcessing(true);
     setProgress(0);
     
-    // Simulate processing with progress
     const interval = setInterval(() => {
       setProgress(prev => {
         const newProgress = prev + 5;
         if (newProgress >= 100) {
           clearInterval(interval);
           
-          // Process asynchronously after the progress is complete
           setTimeout(async () => {
             try {
-              const options = toolInfo?.requiresPassword ? { password } : 
-                          toolInfo?.requiresSignature ? { signature: signatureData } : undefined;
+              let options: any = {};
+              
+              if (toolInfo?.requiresPassword) {
+                options.password = password;
+              }
+              
+              if (toolInfo?.requiresSignature) {
+                options.signature = signatureData;
+              }
+              
+              if (toolId === 'delete-pages' && selectedPages.length > 0) {
+                options.pages = selectedPages;
+              }
+              
+              if (toolId === 'extract-pages' && selectedPages.length > 0) {
+                options.pages = selectedPages;
+              }
+              
+              if (toolId === 'edit-pdf' && edits.length > 0) {
+                options.edits = edits;
+              }
               
               const result = await processFile(toolId || '', files, options);
               setResultFile(result);
@@ -144,24 +198,21 @@ const ToolPage = () => {
         }
         return newProgress;
       });
-    }, 100); // Faster processing for demo
+    }, 100);
   };
   
-  // Password handlers
   const handlePasswordConfirm = (enteredPassword: string) => {
     setPassword(enteredPassword);
     setShowPasswordDialog(false);
     handleProcess();
   };
   
-  // Signature handlers
   const handleSignatureSave = (data: string) => {
     setSignatureData(data);
     setShowSignatureDialog(false);
     handleProcess();
   };
   
-  // Reset the tool
   const handleReset = () => {
     setFiles([]);
     setCompleted(false);
@@ -169,9 +220,10 @@ const ToolPage = () => {
     setResultFile(null);
     setPassword('');
     setSignatureData('');
+    setSelectedPages([]);
+    setEdits([]);
   };
   
-  // Handle download of result file
   const handleDownload = () => {
     if (resultFile) {
       downloadFile(resultFile);
@@ -183,7 +235,6 @@ const ToolPage = () => {
     }
   };
   
-  // Tool definitions
   const tools: Record<string, ToolInfo> = {
     'compress-pdf': {
       id: 'compress-pdf',
@@ -305,6 +356,7 @@ const ToolPage = () => {
       icon: Pencil,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
+      isEditTool: true,
     },
     'unlock-pdf': {
       id: 'unlock-pdf',
@@ -341,13 +393,29 @@ const ToolPage = () => {
       acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 10,
     },
+    'delete-pages': {
+      id: 'delete-pages',
+      name: 'Delete PDF Pages',
+      description: 'Remove pages from your PDF documents.',
+      icon: FileText,
+      acceptedFormats: { 'application/pdf': ['.pdf'] },
+      maxFiles: 1,
+      isEditTool: true,
+    },
+    'extract-pages': {
+      id: 'extract-pages',
+      name: 'Extract PDF Pages',
+      description: 'Extract specific pages from PDF documents.',
+      icon: FileText,
+      acceptedFormats: { 'application/pdf': ['.pdf'] },
+      maxFiles: 1,
+      isEditTool: true,
+    },
   };
   
-  // Get current tool info
   const toolInfo = toolId ? tools[toolId] : null;
   
   if (!toolInfo) {
-    // Handle unknown tool
     return (
       <>
         <Navbar />
@@ -361,7 +429,6 @@ const ToolPage = () => {
     );
   }
   
-  // Helper to get an icon component
   const getIcon = () => {
     const Icon = toolInfo.icon;
     return <Icon className="h-6 w-6 text-primary" />;
@@ -411,12 +478,20 @@ const ToolPage = () => {
           
           {files.length > 0 && files[0].type.includes('pdf') && !processing && (
             <div className="mt-6 border rounded-xl overflow-hidden bg-muted/20">
-              <PDFViewer file={files[0]} className="max-h-[400px]" />
+              {toolInfo.isEditTool ? (
+                <PDFEditor
+                  file={files[0]}
+                  onSave={handlePdfEdits}
+                  onDeletePages={toolId === 'delete-pages' ? handleDeletePages : undefined}
+                  onExtractPages={toolId === 'extract-pages' ? handleExtractPages : undefined}
+                />
+              ) : (
+                <PDFViewer file={files[0]} className="max-h-[400px]" />
+              )}
             </div>
           )}
         </ToolCard>
         
-        {/* Password Dialog */}
         <PasswordDialog
           isOpen={showPasswordDialog}
           title={toolId === 'unlock-pdf' ? 'Enter PDF Password' : 'Set PDF Password'}
@@ -429,7 +504,6 @@ const ToolPage = () => {
           onConfirm={handlePasswordConfirm}
         />
         
-        {/* Signature Dialog */}
         <SignatureCanvas
           isOpen={showSignatureDialog}
           onClose={() => setShowSignatureDialog(false)}
@@ -447,7 +521,6 @@ const ToolPage = () => {
           />
         )}
         
-        {/* How it works section */}
         <div className="mt-12 bg-card border rounded-xl p-8 shadow-sm">
           <h2 className="text-2xl font-bold mb-6 flex items-center">
             <FileText className="mr-2 h-5 w-5 text-primary" />
