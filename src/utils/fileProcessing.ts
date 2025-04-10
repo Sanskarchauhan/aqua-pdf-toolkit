@@ -1,5 +1,8 @@
 
 import { toast } from '@/hooks/use-toast';
+import { PDFDocument, degrees, StandardFonts, rgb } from 'pdf-lib';
+import { saveAs } from 'file-saver';
+import Tesseract from 'tesseract.js';
 
 // Helper function to read file as ArrayBuffer
 export const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
@@ -13,13 +16,13 @@ export const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
 
 // Create a result file with appropriate name based on the tool
 export const createResultFile = (
-  content: string | ArrayBuffer, 
+  content: string | ArrayBuffer | Uint8Array | Blob, 
   toolId: string, 
   originalFileName?: string,
   type: string = 'application/pdf'
 ): File => {
-  const blob = content instanceof ArrayBuffer 
-    ? new Blob([content], { type }) 
+  const blob = content instanceof Blob 
+    ? content 
     : new Blob([content], { type });
   
   const fileName = originalFileName 
@@ -32,17 +35,20 @@ export const createResultFile = (
   });
 };
 
-// Simple file size reducer function (simulates compression)
+// Compress PDF function using pdf-lib
 export const compressPdf = async (file: File): Promise<File> => {
   try {
-    // In a real implementation, you would use PDF.js or similar library
-    // to actually compress the PDF. For demo, we'll simulate it.
-    const buffer = await readFileAsArrayBuffer(file);
+    const arrayBuffer = await readFileAsArrayBuffer(file);
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
     
-    // Simulate compression by just returning the same content
-    // In a real app, you'd process the PDF here
+    // Save with compression settings
+    const compressedBytes = await pdfDoc.save({
+      useObjectStreams: true,
+      addCompression: true,
+    });
+    
     return createResultFile(
-      buffer, 
+      compressedBytes, 
       'compress-pdf', 
       file.name
     );
@@ -52,34 +58,48 @@ export const compressPdf = async (file: File): Promise<File> => {
   }
 };
 
-// Merge PDFs function
+// Merge PDFs function using pdf-lib
 export const mergePdfs = async (files: File[]): Promise<File> => {
   try {
-    // In a real implementation, you would use PDF.js or similar library
-    // to actually merge the PDFs. For demo, we'll simulate it.
+    // Create a new PDF document
+    const mergedPdf = await PDFDocument.create();
     
-    // Simulate merging by concatenating file names
-    const fileNames = files.map(file => file.name).join('_');
-    const content = `Merged PDFs: ${fileNames}`;
+    // Process each file
+    for (const file of files) {
+      const arrayBuffer = await readFileAsArrayBuffer(file);
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      
+      // Copy pages from the source document to the merged document
+      const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+      copiedPages.forEach((page) => {
+        mergedPdf.addPage(page);
+      });
+    }
     
-    return createResultFile(content, 'merge-pdf', 'merged.pdf');
+    // Save the merged PDF
+    const mergedBytes = await mergedPdf.save();
+    
+    return createResultFile(mergedBytes, 'merge-pdf', 'merged.pdf');
   } catch (error) {
     console.error('Error merging PDFs:', error);
     throw new Error('Failed to merge PDFs');
   }
 };
 
-// Convert PDF to Word
+// Convert PDF to Word (simulated, would need a server-side solution in a real app)
 export const pdfToWord = async (file: File): Promise<File> => {
   try {
-    // In a real implementation, you would use a PDF to Word conversion library
-    const buffer = await readFileAsArrayBuffer(file);
+    // In a real app, this would use a server API to perform the conversion
+    // For now, we'll create a demo docx file as if it were converted
+    const bytes = await readFileAsArrayBuffer(file);
     
-    // Create a fake Word document
+    // Get the filename without extension
     const fileName = file.name.replace('.pdf', '.docx');
     
+    // In a real app, you'd send the PDF to a server for conversion
+    // Here we're just simulating the result for the demo
     return createResultFile(
-      buffer, 
+      bytes, 
       'pdf-to-word', 
       fileName, 
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -90,84 +110,196 @@ export const pdfToWord = async (file: File): Promise<File> => {
   }
 };
 
-// Convert Word to PDF
+// Convert Word to PDF (simulated, would need a server-side solution in a real app)
 export const wordToPdf = async (file: File): Promise<File> => {
   try {
-    // In a real implementation, you would use a Word to PDF conversion library
-    const buffer = await readFileAsArrayBuffer(file);
+    // In a real app, this would use a server API for conversion
+    // For demonstration purposes, we'll create a simple PDF
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const { width, height } = page.getSize();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     
-    // Create a PDF from the Word document
+    // Add file name as text
+    page.drawText(`Converted from: ${file.name}`, {
+      x: 50,
+      y: height - 50,
+      size: 16,
+      font,
+      color: rgb(0, 0, 0),
+    });
+    
+    page.drawText('This is a simulated Word to PDF conversion', {
+      x: 50,
+      y: height - 100,
+      size: 12,
+      font,
+      color: rgb(0, 0, 0),
+    });
+    
+    const pdfBytes = await pdfDoc.save();
     const fileName = file.name.replace('.docx', '.pdf').replace('.doc', '.pdf');
     
-    return createResultFile(buffer, 'word-to-pdf', fileName);
+    return createResultFile(pdfBytes, 'word-to-pdf', fileName);
   } catch (error) {
     console.error('Error converting Word to PDF:', error);
     throw new Error('Failed to convert Word to PDF');
   }
 };
 
-// Process PDF with OCR
+// Perform OCR on PDF
 export const ocrPdf = async (file: File): Promise<File> => {
   try {
-    // In a real implementation, you would use Tesseract.js or similar OCR library
-    const buffer = await readFileAsArrayBuffer(file);
+    toast({
+      title: "OCR Processing",
+      description: "Converting PDF to text. This may take a while for large documents.",
+    });
     
-    return createResultFile(buffer, 'pdf-ocr', file.name);
+    // In a real app, we would break this into pages
+    // For demo purposes, we'll create a simple OCR result
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const { width, height } = page.getSize();
+    const font = await pdfDoc.embedFont(StandardFonts.Courier);
+    
+    // Add a simulated OCR result
+    page.drawText(`OCR Results for: ${file.name}`, {
+      x: 50,
+      y: height - 50,
+      size: 16,
+      font,
+      color: rgb(0, 0, 0),
+    });
+    
+    // In a real app, this would use Tesseract.js to extract text from PDF pages
+    // Here's a simplified example of how you could use Tesseract
+    try {
+      const imageData = URL.createObjectURL(file);
+      const result = await Tesseract.recognize(
+        imageData,
+        'eng',
+        { logger: m => console.log(m) }
+      );
+      
+      // Split into lines and write to PDF
+      const lines = result.data.text.split('\n');
+      let y = height - 100;
+      
+      for (const line of lines.slice(0, 20)) { // Limit to 20 lines for demo
+        page.drawText(line, {
+          x: 50,
+          y,
+          size: 10,
+          font,
+          color: rgb(0, 0, 0),
+        });
+        y -= 20;
+      }
+      
+      URL.revokeObjectURL(imageData);
+    } catch (e) {
+      console.error("Error with OCR processing:", e);
+      page.drawText("OCR processing failed or is limited in this demo.", {
+        x: 50,
+        y: height - 100,
+        size: 12,
+        font,
+        color: rgb(0, 0, 0),
+      });
+    }
+    
+    const pdfBytes = await pdfDoc.save();
+    return createResultFile(pdfBytes, 'pdf-ocr', `${file.name}-ocr.pdf`);
   } catch (error) {
     console.error('Error performing OCR on PDF:', error);
     throw new Error('Failed to perform OCR on PDF');
   }
 };
 
-// Unlock PDF (remove password)
+// Unlock PDF (simulated, would need a server-side solution for real password removal)
 export const unlockPdf = async (file: File, password?: string): Promise<File> => {
   try {
-    // In a real implementation, you would use PDF.js to unlock the PDF
-    const buffer = await readFileAsArrayBuffer(file);
+    // In a real app, this would use a library with password handling
+    const arrayBuffer = await readFileAsArrayBuffer(file);
     
-    return createResultFile(buffer, 'unlock-pdf', file.name);
+    // Try to load the PDF with the password
+    const pdfDoc = await PDFDocument.load(arrayBuffer, {
+      password,
+    });
+    
+    // If we get here, the password worked or the PDF wasn't encrypted
+    const pdfBytes = await pdfDoc.save(); // Save without encryption
+    
+    return createResultFile(pdfBytes, 'unlock-pdf', file.name);
   } catch (error) {
     console.error('Error unlocking PDF:', error);
-    throw new Error('Failed to unlock PDF');
+    throw new Error('Failed to unlock PDF. The password may be incorrect.');
   }
 };
 
-// Protect PDF (add password)
+// Protect PDF with password
 export const protectPdf = async (file: File, password: string): Promise<File> => {
   try {
-    // In a real implementation, you would use PDF.js to protect the PDF
-    const buffer = await readFileAsArrayBuffer(file);
+    const arrayBuffer = await readFileAsArrayBuffer(file);
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
     
-    return createResultFile(buffer, 'protect-pdf', file.name);
+    // Set the password for the PDF
+    const encryptedBytes = await pdfDoc.save({
+      userPassword: password,
+      ownerPassword: password,
+    });
+    
+    return createResultFile(encryptedBytes, 'protect-pdf', file.name);
   } catch (error) {
     console.error('Error protecting PDF:', error);
-    throw new Error('Failed to protect PDF');
+    throw new Error('Failed to protect PDF with password');
   }
 };
 
 // Add e-signature to PDF
 export const signPdf = async (file: File, signatureData: string): Promise<File> => {
   try {
-    // In a real implementation, you would use PDF.js or similar to add signature
-    const buffer = await readFileAsArrayBuffer(file);
+    const arrayBuffer = await readFileAsArrayBuffer(file);
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
     
-    return createResultFile(buffer, 'sign-pdf', file.name);
+    // Convert the signature data URL to image
+    const signatureImageData = signatureData.split(',')[1];
+    const signatureImage = await pdfDoc.embedPng(Uint8Array.from(atob(signatureImageData), c => c.charCodeAt(0)));
+    
+    // Add the signature to the last page of the PDF
+    const pages = pdfDoc.getPages();
+    const lastPage = pages[pages.length - 1];
+    const { width, height } = lastPage.getSize();
+    
+    // Place the signature at the bottom right of the page
+    const signatureDims = signatureImage.scale(0.5); // Scale the signature to a reasonable size
+    lastPage.drawImage(signatureImage, {
+      x: width - signatureDims.width - 50,
+      y: 50,
+      width: signatureDims.width,
+      height: signatureDims.height,
+    });
+    
+    const signedBytes = await pdfDoc.save();
+    return createResultFile(signedBytes, 'sign-pdf', file.name);
   } catch (error) {
     console.error('Error signing PDF:', error);
-    throw new Error('Failed to sign PDF');
+    throw new Error('Failed to add signature to PDF');
   }
 };
 
-// PDF to Excel
+// PDF to Excel (simulated, would need server-side processing for real conversion)
 export const pdfToExcel = async (file: File): Promise<File> => {
   try {
-    const buffer = await readFileAsArrayBuffer(file);
+    // In a real app, this would use a server API for conversion
+    const bytes = await readFileAsArrayBuffer(file);
     const fileName = file.name.replace('.pdf', '.xlsx');
     
+    // Simulate the excel file
     return createResultFile(
-      buffer, 
-      'pdf-to-excel', 
-      fileName, 
+      bytes,
+      'pdf-to-excel',
+      fileName,
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
   } catch (error) {
@@ -176,29 +308,45 @@ export const pdfToExcel = async (file: File): Promise<File> => {
   }
 };
 
-// Excel to PDF
+// Excel to PDF (simulated)
 export const excelToPdf = async (file: File): Promise<File> => {
   try {
-    const buffer = await readFileAsArrayBuffer(file);
+    // Create a simple PDF showing "converted from Excel"
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const { width, height } = page.getSize();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    
+    page.drawText(`Converted from Excel: ${file.name}`, {
+      x: 50,
+      y: height - 50,
+      size: 16,
+      font,
+      color: rgb(0, 0, 0),
+    });
+    
+    const pdfBytes = await pdfDoc.save();
     const fileName = file.name.replace('.xlsx', '.pdf').replace('.xls', '.pdf');
     
-    return createResultFile(buffer, 'excel-to-pdf', fileName);
+    return createResultFile(pdfBytes, 'excel-to-pdf', fileName);
   } catch (error) {
     console.error('Error converting Excel to PDF:', error);
     throw new Error('Failed to convert Excel to PDF');
   }
 };
 
-// PDF to JPG
+// PDF to JPG (simulated, real conversion would use pdf.js or a server-side tool)
 export const pdfToJpg = async (file: File): Promise<File> => {
   try {
-    const buffer = await readFileAsArrayBuffer(file);
+    // In a real app, this would render PDF pages to a canvas and convert to JPG
+    const arrayBuffer = await readFileAsArrayBuffer(file);
     const fileName = file.name.replace('.pdf', '.jpg');
     
+    // For this demo, we'll return a placeholder
     return createResultFile(
-      buffer, 
-      'pdf-to-jpg', 
-      fileName, 
+      arrayBuffer,
+      'pdf-to-jpg',
+      fileName,
       'image/jpeg'
     );
   } catch (error) {
@@ -210,26 +358,52 @@ export const pdfToJpg = async (file: File): Promise<File> => {
 // JPG to PDF
 export const jpgToPdf = async (files: File[]): Promise<File> => {
   try {
-    // In a real implementation, you would merge all images into one PDF
-    const buffer = await readFileAsArrayBuffer(files[0]);
+    const pdfDoc = await PDFDocument.create();
     
-    return createResultFile(buffer, 'jpg-to-pdf', 'images.pdf');
+    for (const file of files) {
+      // Read the image
+      const imageBytes = await readFileAsArrayBuffer(file);
+      
+      // Determine image type and embed accordingly
+      let image;
+      if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+        image = await pdfDoc.embedJpg(new Uint8Array(imageBytes));
+      } else if (file.type === 'image/png') {
+        image = await pdfDoc.embedPng(new Uint8Array(imageBytes));
+      } else {
+        continue; // Skip unsupported image types
+      }
+      
+      // Add page with image
+      const page = pdfDoc.addPage([image.width, image.height]);
+      page.drawImage(image, {
+        x: 0,
+        y: 0,
+        width: image.width,
+        height: image.height,
+      });
+    }
+    
+    const pdfBytes = await pdfDoc.save();
+    return createResultFile(pdfBytes, 'jpg-to-pdf', 'images-to-pdf.pdf');
   } catch (error) {
     console.error('Error converting JPG to PDF:', error);
     throw new Error('Failed to convert JPG to PDF');
   }
 };
 
-// PDF to PowerPoint
+// PDF to PowerPoint (simulated)
 export const pdfToPpt = async (file: File): Promise<File> => {
   try {
-    const buffer = await readFileAsArrayBuffer(file);
+    // In a real app, this would use a server API for conversion
+    const bytes = await readFileAsArrayBuffer(file);
     const fileName = file.name.replace('.pdf', '.pptx');
     
+    // Simulate the PowerPoint file
     return createResultFile(
-      buffer, 
-      'pdf-to-ppt', 
-      fileName, 
+      bytes,
+      'pdf-to-ppt',
+      fileName,
       'application/vnd.openxmlformats-officedocument.presentationml.presentation'
     );
   } catch (error) {
@@ -238,37 +412,75 @@ export const pdfToPpt = async (file: File): Promise<File> => {
   }
 };
 
-// PowerPoint to PDF
+// PowerPoint to PDF (simulated)
 export const pptToPdf = async (file: File): Promise<File> => {
   try {
-    const buffer = await readFileAsArrayBuffer(file);
+    // Create a simple PDF showing it was converted from PowerPoint
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const { width, height } = page.getSize();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    
+    page.drawText(`Converted from PowerPoint: ${file.name}`, {
+      x: 50,
+      y: height - 50,
+      size: 16,
+      font,
+      color: rgb(0, 0, 0),
+    });
+    
+    const pdfBytes = await pdfDoc.save();
     const fileName = file.name.replace('.pptx', '.pdf').replace('.ppt', '.pdf');
     
-    return createResultFile(buffer, 'ppt-to-pdf', fileName);
+    return createResultFile(pdfBytes, 'ppt-to-pdf', fileName);
   } catch (error) {
     console.error('Error converting PowerPoint to PDF:', error);
     throw new Error('Failed to convert PowerPoint to PDF');
   }
 };
 
-// Split PDF
+// Split PDF into multiple files
 export const splitPdf = async (file: File): Promise<File> => {
   try {
-    const buffer = await readFileAsArrayBuffer(file);
+    const arrayBuffer = await readFileAsArrayBuffer(file);
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    const pageCount = pdfDoc.getPageCount();
     
-    return createResultFile(buffer, 'split-pdf', 'split-part1.pdf');
+    // For demo purposes, we'll return a single split PDF
+    // with the first half of pages
+    if (pageCount > 1) {
+      const splitDoc = await PDFDocument.create();
+      const pages = await splitDoc.copyPages(pdfDoc, [0, Math.min(1, pageCount - 1)]);
+      
+      pages.forEach(page => {
+        splitDoc.addPage(page);
+      });
+      
+      const splitBytes = await splitDoc.save();
+      return createResultFile(splitBytes, 'split-pdf', 'split-part1.pdf');
+    } else {
+      throw new Error('PDF has too few pages to split');
+    }
   } catch (error) {
     console.error('Error splitting PDF:', error);
     throw new Error('Failed to split PDF');
   }
 };
 
-// Rotate PDF
+// Rotate PDF pages
 export const rotatePdf = async (file: File): Promise<File> => {
   try {
-    const buffer = await readFileAsArrayBuffer(file);
+    const arrayBuffer = await readFileAsArrayBuffer(file);
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    const pages = pdfDoc.getPages();
     
-    return createResultFile(buffer, 'rotate-pdf', file.name);
+    // Rotate each page 90 degrees clockwise
+    pages.forEach(page => {
+      page.setRotation(degrees(90));
+    });
+    
+    const rotatedBytes = await pdfDoc.save();
+    return createResultFile(rotatedBytes, 'rotate-pdf', file.name);
   } catch (error) {
     console.error('Error rotating PDF:', error);
     throw new Error('Failed to rotate PDF');
@@ -340,4 +552,9 @@ export const processFile = async (toolId: string, files: File[], options?: any):
     });
     throw error;
   }
+};
+
+// Helper function to download a file
+export const downloadFile = (file: File) => {
+  saveAs(file, file.name);
 };

@@ -1,5 +1,6 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import SignaturePad from 'signature_pad';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +10,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { FileSignature, Trash2, Check } from 'lucide-react';
+import { FileSignature, Trash2, Check, Download } from 'lucide-react';
 
 interface SignatureCanvasProps {
   isOpen: boolean;
@@ -23,64 +24,80 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
   onSave,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const signaturePadRef = useRef<SignaturePad | null>(null);
+  const [isEmpty, setIsEmpty] = useState(true);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    setIsDrawing(true);
-    ctx.beginPath();
-    ctx.moveTo(
-      e.nativeEvent.offsetX,
-      e.nativeEvent.offsetY
-    );
-  };
+  useEffect(() => {
+    const initSignaturePad = () => {
+      if (canvasRef.current && isOpen) {
+        // Adjust canvas for high DPI displays
+        const canvas = canvasRef.current;
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        const context = canvas.getContext('2d');
+        
+        if (context) {
+          context.scale(ratio, ratio);
+          context.fillStyle = '#fff';
+          context.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // Initialize signature pad
+        if (signaturePadRef.current) {
+          signaturePadRef.current.clear();
+        } else {
+          signaturePadRef.current = new SignaturePad(canvas, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'black',
+            minWidth: 1,
+            maxWidth: 2.5,
+          });
+          
+          signaturePadRef.current.addEventListener('beginStroke', () => {
+            setIsEmpty(false);
+          });
+          
+          signaturePadRef.current.addEventListener('endStroke', () => {
+            setIsEmpty(signaturePadRef.current?.isEmpty() || true);
+          });
+        }
+      }
+    };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
-    
-    ctx.lineTo(
-      e.nativeEvent.offsetX,
-      e.nativeEvent.offsetY
-    );
-    ctx.stroke();
-  };
+    const timeoutId = setTimeout(() => {
+      initSignaturePad();
+    }, 300);
 
-  const stopDrawing = () => {
-    setIsDrawing(false);
-  };
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [isOpen]);
 
   const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (signaturePadRef.current) {
+      signaturePadRef.current.clear();
+      setIsEmpty(true);
+    }
   };
 
   const saveSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const signatureData = canvas.toDataURL('image/png');
-    onSave(signatureData);
-    clearCanvas();
+    if (signaturePadRef.current && !signaturePadRef.current.isEmpty()) {
+      const signatureData = signaturePadRef.current.toDataURL('image/png');
+      onSave(signatureData);
+    }
+  };
+
+  const saveAsImage = () => {
+    if (signaturePadRef.current && !signaturePadRef.current.isEmpty()) {
+      const signatureData = signaturePadRef.current.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = 'signature.png';
+      link.href = signatureData;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   return (
@@ -96,16 +113,11 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 flex flex-col items-center">
-          <div className="border border-dashed border-gray-300 rounded-md w-full mb-4">
+          <div className="border border-dashed border-gray-300 rounded-md w-full mb-4 bg-white">
             <canvas
               ref={canvasRef}
-              width={500}
               height={200}
-              className="bg-white w-full rounded-md cursor-crosshair"
-              onMouseDown={startDrawing}
-              onMouseMove={draw}
-              onMouseUp={stopDrawing}
-              onMouseLeave={stopDrawing}
+              className="signature-canvas w-full h-48"
             />
           </div>
           <div className="flex justify-center space-x-4">
@@ -118,6 +130,16 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
               <Trash2 className="h-4 w-4 mr-1" />
               Clear
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={saveAsImage}
+              disabled={isEmpty}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Save as Image
+            </Button>
           </div>
         </div>
         <DialogFooter>
@@ -127,9 +149,10 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
           <Button 
             type="button" 
             onClick={saveSignature}
+            disabled={isEmpty}
           >
             <Check className="h-4 w-4 mr-1" />
-            Save Signature
+            Use Signature
           </Button>
         </DialogFooter>
       </DialogContent>

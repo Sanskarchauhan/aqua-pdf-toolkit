@@ -1,8 +1,10 @@
 
-import React from 'react';
-import { FileCheck, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileCheck, Download, FileUp, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import PDFViewer from '@/components/shared/PDFViewer';
+import { downloadFile } from '@/utils/fileProcessing';
 
 interface ToolCardProps {
   toolId: string;
@@ -29,11 +31,17 @@ const ToolCard: React.FC<ToolCardProps> = ({
   onReset,
   children,
 }) => {
+  const [showPreview, setShowPreview] = useState<boolean>(false);
+
   return (
-    <div className="bg-card border rounded-lg mt-6">
+    <div className="bg-card border rounded-xl mt-6 shadow-sm overflow-hidden">
       {!completed ? (
         <div className="p-6">
-          <h2 className="text-xl font-medium mb-4">Upload Files</h2>
+          <div className="flex items-center gap-2 mb-4 text-xl font-medium">
+            <FileUp className="h-5 w-5 text-primary" />
+            Upload Files
+          </div>
+          
           {children}
           
           {files.length > 0 && (
@@ -41,9 +49,21 @@ const ToolCard: React.FC<ToolCardProps> = ({
               <Button 
                 onClick={onProcess} 
                 disabled={processing}
-                className="min-w-[150px]"
+                className="min-w-[150px] bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
               >
-                {processing ? "Processing..." : "Process Files"}
+                {processing ? (
+                  <span className="flex items-center gap-2">
+                    <span className="animate-pulse">Processing</span>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-white animate-pulse" style={{ animationDelay: '0s' }} />
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-white animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-white animate-pulse" style={{ animationDelay: '0.4s' }} />
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    Process Files
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </span>
+                )}
               </Button>
             </div>
           )}
@@ -56,23 +76,38 @@ const ToolCard: React.FC<ToolCardProps> = ({
           )}
         </div>
       ) : (
-        <div className="p-6 text-center animate-fade-in">
-          <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FileCheck className="h-8 w-8 text-primary" />
+        <div className="animate-fade-in">
+          <div className="p-6 text-center">
+            <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FileCheck className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Processing Complete!</h2>
+            <p className="text-muted-foreground mb-6">
+              Your files have been processed successfully.
+            </p>
+            <div className="flex justify-center gap-4 mb-6">
+              <Button onClick={onDownload} className="bg-primary hover:bg-primary/90">
+                <Download className="h-4 w-4 mr-2" />
+                Download Result
+              </Button>
+              <Button variant="outline" onClick={() => setShowPreview(!showPreview)}>
+                {showPreview ? 'Hide Preview' : 'Preview Result'}
+              </Button>
+              <Button variant="ghost" onClick={onReset}>
+                Process Another File
+              </Button>
+            </div>
           </div>
-          <h2 className="text-xl font-bold mb-2">Processing Complete!</h2>
-          <p className="text-muted-foreground mb-6">
-            Your files have been processed successfully.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Button onClick={onDownload}>
-              <Download className="h-4 w-4 mr-2" />
-              Download Result
-            </Button>
-            <Button variant="outline" onClick={onReset}>
-              Process Another File
-            </Button>
-          </div>
+          
+          {showPreview && resultFile && (
+            <div className="p-4 bg-muted/30 border-t">
+              <PDFViewer 
+                file={resultFile}
+                onDownload={() => downloadFile(resultFile)}
+                className="max-h-[500px]"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
