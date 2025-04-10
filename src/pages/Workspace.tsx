@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   FileText, FileUp, Wand2, Layers, Pencil, ScanLine, 
   FileSignature, Lock, Camera, ArrowRight,
-  Trash2, Plus, File
+  Trash2, Plus, File, Sparkles, Loader2
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -19,19 +19,28 @@ import {
   clearWorkspace,
   WorkspaceItem 
 } from '@/utils/workspaceManager';
+import { useAuth } from '@/contexts/AuthContext';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const Workspace = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const [files, setFiles] = useState<File[]>([]);
   const [selectedTool, setSelectedTool] = useState('');
   const [workspaceItems, setWorkspaceItems] = useState<WorkspaceItem[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Load workspace on component mount
   useEffect(() => {
     const items = getWorkspace();
     setWorkspaceItems(items);
-  }, []);
+    
+    // Redirect to login if not authenticated
+    if (!isAuthenticated) {
+      // We'll allow browsing but show a prompt when trying to use tools
+    }
+  }, [isAuthenticated]);
 
   // Handle file upload
   const handleFilesAdded = (newFiles: File[]) => {
@@ -54,13 +63,7 @@ const Workspace = () => {
       id: 'convert',
       name: 'Convert',
       icon: FileText,
-      tools: ['pdf-converter', 'word-to-pdf', 'pdf-to-word']
-    },
-    {
-      id: 'ai-tools',
-      name: 'AI Tools',
-      icon: Wand2,
-      tools: ['chat-pdf', 'summarize-pdf']
+      tools: ['pdf-to-word', 'word-to-pdf', 'pdf-to-excel', 'excel-to-pdf', 'pdf-to-ppt', 'ppt-to-pdf', 'pdf-to-jpg', 'jpg-to-pdf']
     },
     {
       id: 'organize',
@@ -72,7 +75,7 @@ const Workspace = () => {
       id: 'edit',
       name: 'Edit',
       icon: Pencil,
-      tools: ['edit-pdf', 'annotate-pdf']
+      tools: ['edit-pdf', 'rotate-pdf']
     },
     {
       id: 'ocr',
@@ -111,6 +114,16 @@ const Workspace = () => {
 
   // Save to workspace
   const handleSaveToWorkspace = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save items to your workspace.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+    
     if (files.length === 0) {
       toast({
         title: "No files added",
@@ -128,6 +141,11 @@ const Workspace = () => {
     // Clear the files and selected tool after saving to workspace
     setFiles([]);
     setSelectedTool('');
+    
+    toast({
+      title: "Saved to workspace",
+      description: "Your files have been saved to your workspace.",
+    });
   };
   
   // Remove item from workspace
@@ -148,6 +166,16 @@ const Workspace = () => {
   
   // Process with selected tool
   const handleProcessWithTool = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to process files.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+    
     if (!selectedTool) {
       toast({
         title: "No tool selected",
@@ -166,14 +194,31 @@ const Workspace = () => {
       return;
     }
     
-    // Navigate to the selected tool page with these files
-    // In a real implementation, we would pass the files through state management
-    // For now, we'll just redirect and use workspace functionality later
-    navigate(`/tools/${selectedTool}`);
+    setIsProcessing(true);
+    
+    // Simulate processing delay
+    setTimeout(() => {
+      setIsProcessing(false);
+      
+      // Navigate to the selected tool page with these files
+      // In a real implementation, we would pass the files through state management
+      // For now, we'll just redirect and use workspace functionality later
+      navigate(`/tools/${selectedTool}`);
+    }, 1500);
   };
   
   // Use workspace item
   const handleUseWorkspaceItem = (item: WorkspaceItem) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to use workspace items.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+    
     if (item.toolId) {
       // Navigate to the tool page
       navigate(`/tools/${item.toolId}`);
@@ -197,13 +242,20 @@ const Workspace = () => {
       year: 'numeric',
     });
   };
+  
+  // Get tool name in presentable format
+  const getToolDisplayName = (toolId: string) => {
+    return toolId
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, letter => letter.toUpperCase());
+  };
 
   return (
     <>
       <Navbar />
 
       <div className="container mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold mb-2">Workspace</h1>
+        <h1 className="text-4xl font-bold mb-2 gradient-text">Your Workspace</h1>
         <p className="text-xl text-muted-foreground mb-8">
           Upload your files and select a tool to get started
         </p>
@@ -211,21 +263,38 @@ const Workspace = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left column - File uploader */}
           <div className="lg:col-span-2">
-            <div className="bg-card border rounded-lg p-6">
-              <h2 className="text-xl font-medium mb-4">Upload Files</h2>
+            <div className="bg-card border rounded-lg p-6 shadow-sm hover:shadow-md transition-all">
+              <h2 className="text-xl font-medium mb-4 flex items-center">
+                <Sparkles className="h-5 w-5 mr-2 text-primary" />
+                Upload Files
+              </h2>
               <FileUploader onFilesAdded={handleFilesAdded} className="mb-4" />
               
               {files.length > 0 && (
                 <div className="text-center mt-6 flex justify-center gap-4">
-                  <Button onClick={handleProcessWithTool} className="gap-2">
-                    Process Files
-                    <ArrowRight className="h-4 w-4" />
+                  <Button 
+                    onClick={handleProcessWithTool} 
+                    className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        Process Files
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
                   </Button>
                   
                   <Button 
                     variant="outline" 
                     onClick={handleSaveToWorkspace}
                     className="gap-2"
+                    disabled={isProcessing}
                   >
                     <Plus className="h-4 w-4" />
                     Save to Workspace
@@ -236,9 +305,12 @@ const Workspace = () => {
             
             {/* Workspace items */}
             {workspaceItems.length > 0 && (
-              <div className="bg-card border rounded-lg p-6 mt-8">
+              <div className="bg-card border rounded-lg p-6 mt-8 shadow-sm hover:shadow-md transition-all">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-medium">Your Workspace</h2>
+                  <h2 className="text-xl font-medium flex items-center">
+                    <File className="h-5 w-5 mr-2 text-primary" />
+                    Your Workspace
+                  </h2>
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -254,16 +326,16 @@ const Workspace = () => {
                   {workspaceItems.map((item) => (
                     <div 
                       key={item.id} 
-                      className="border rounded-md p-4 flex justify-between items-center"
+                      className="border rounded-md p-4 flex justify-between items-center hover:border-primary/30 transition-all card-hover-effect"
                     >
                       <div className="flex items-center gap-3">
                         <div className="bg-primary/10 p-2 rounded-full">
-                          <File className="h-5 w-5" />
+                          <File className="h-5 w-5 text-primary" />
                         </div>
                         <div>
                           <p className="font-medium">
                             {item.files.length} {item.files.length === 1 ? 'file' : 'files'}
-                            {item.toolId ? ` - ${item.toolId}` : ''}
+                            {item.toolId ? ` - ${getToolDisplayName(item.toolId)}` : ''}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Added on {formatDate(item.dateAdded)}
@@ -274,7 +346,7 @@ const Workspace = () => {
                       <div className="flex gap-2">
                         <Button 
                           size="sm" 
-                          className="h-8" 
+                          className="h-8 bg-gradient-to-r from-primary to-accent hover:opacity-90" 
                           onClick={() => handleUseWorkspaceItem(item)}
                         >
                           Use
@@ -297,8 +369,11 @@ const Workspace = () => {
 
           {/* Right column - Tool selection */}
           <div>
-            <div className="bg-card border rounded-lg p-6">
-              <h2 className="text-xl font-medium mb-4">Select Tool</h2>
+            <div className="bg-card border rounded-lg p-6 shadow-sm hover:shadow-md transition-all">
+              <h2 className="text-xl font-medium mb-4 flex items-center">
+                <Wand2 className="h-5 w-5 mr-2 text-primary" />
+                Select Tool
+              </h2>
               
               <Tabs defaultValue="recent">
                 <TabsList className="w-full mb-4">
@@ -308,30 +383,28 @@ const Workspace = () => {
                 
                 <TabsContent value="recent" className="space-y-2">
                   {/* Recent/featured tools */}
-                  {['compress-pdf', 'merge-pdf', 'pdf-to-word', 'chat-pdf'].map(toolId => (
+                  {['compress-pdf', 'merge-pdf', 'pdf-to-word', 'pdf-to-excel', 'rotate-pdf'].map(toolId => (
                     <Button
                       key={toolId}
                       variant={selectedTool === toolId ? "default" : "outline"}
-                      className="w-full justify-start"
+                      className={`w-full justify-start ${selectedTool === toolId ? 'bg-gradient-to-r from-primary to-accent' : ''}`}
                       onClick={() => handleToolSelect(toolId)}
                     >
                       {toolId === 'compress-pdf' && <FileUp className="h-4 w-4 mr-2" />}
                       {toolId === 'merge-pdf' && <Layers className="h-4 w-4 mr-2" />}
                       {toolId === 'pdf-to-word' && <FileText className="h-4 w-4 mr-2" />}
-                      {toolId === 'chat-pdf' && <Wand2 className="h-4 w-4 mr-2" />}
+                      {toolId === 'pdf-to-excel' && <FileText className="h-4 w-4 mr-2" />}
+                      {toolId === 'rotate-pdf' && <FileText className="h-4 w-4 mr-2" />}
                       
-                      {toolId === 'compress-pdf' && 'Compress PDF'}
-                      {toolId === 'merge-pdf' && 'Merge PDFs'}
-                      {toolId === 'pdf-to-word' && 'PDF to Word'}
-                      {toolId === 'chat-pdf' && 'Chat with PDF'}
+                      {getToolDisplayName(toolId)}
                     </Button>
                   ))}
                 </TabsContent>
                 
                 <TabsContent value="all">
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {toolCategories.map(category => (
-                      <div key={category.id}>
+                      <div key={category.id} className="animate-fade-in">
                         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
                           <category.icon className="h-4 w-4" />
                           {category.name}
@@ -341,10 +414,10 @@ const Workspace = () => {
                             <Button
                               key={toolId}
                               variant={selectedTool === toolId ? "default" : "outline"}
-                              className="w-full justify-start text-sm h-8"
+                              className={`w-full justify-start text-sm h-8 ${selectedTool === toolId ? 'bg-gradient-to-r from-primary to-accent' : ''}`}
                               onClick={() => handleToolSelect(toolId)}
                             >
-                              {toolId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              {getToolDisplayName(toolId)}
                             </Button>
                           ))}
                         </div>
@@ -353,6 +426,22 @@ const Workspace = () => {
                   </div>
                 </TabsContent>
               </Tabs>
+              
+              {user && (
+                <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
+                  <div className="flex items-center">
+                    <Avatar className="h-10 w-10 mr-3">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {user.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
