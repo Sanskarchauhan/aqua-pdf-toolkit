@@ -10,6 +10,9 @@ import Tools from "./pages/Tools";
 import Workspace from "./pages/Workspace";
 import ToolPage from "./pages/ToolPage";
 import NotFound from "./pages/NotFound";
+import SignUp from "./pages/SignUp";
+import Login from "./pages/Login";
+import GetStarted from "./pages/GetStarted";
 
 const App = () => {
   // Create a client for React Query
@@ -26,6 +29,9 @@ const App = () => {
             <Route path="/tools" element={<Tools />} />
             <Route path="/tools/:toolId" element={<ToolPage />} />
             <Route path="/workspace" element={<Workspace />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/get-started" element={<GetStarted />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

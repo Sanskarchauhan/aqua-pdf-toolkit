@@ -158,6 +158,123 @@ export const signPdf = async (file: File, signatureData: string): Promise<File> 
   }
 };
 
+// PDF to Excel
+export const pdfToExcel = async (file: File): Promise<File> => {
+  try {
+    const buffer = await readFileAsArrayBuffer(file);
+    const fileName = file.name.replace('.pdf', '.xlsx');
+    
+    return createResultFile(
+      buffer, 
+      'pdf-to-excel', 
+      fileName, 
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+  } catch (error) {
+    console.error('Error converting PDF to Excel:', error);
+    throw new Error('Failed to convert PDF to Excel');
+  }
+};
+
+// Excel to PDF
+export const excelToPdf = async (file: File): Promise<File> => {
+  try {
+    const buffer = await readFileAsArrayBuffer(file);
+    const fileName = file.name.replace('.xlsx', '.pdf').replace('.xls', '.pdf');
+    
+    return createResultFile(buffer, 'excel-to-pdf', fileName);
+  } catch (error) {
+    console.error('Error converting Excel to PDF:', error);
+    throw new Error('Failed to convert Excel to PDF');
+  }
+};
+
+// PDF to JPG
+export const pdfToJpg = async (file: File): Promise<File> => {
+  try {
+    const buffer = await readFileAsArrayBuffer(file);
+    const fileName = file.name.replace('.pdf', '.jpg');
+    
+    return createResultFile(
+      buffer, 
+      'pdf-to-jpg', 
+      fileName, 
+      'image/jpeg'
+    );
+  } catch (error) {
+    console.error('Error converting PDF to JPG:', error);
+    throw new Error('Failed to convert PDF to JPG');
+  }
+};
+
+// JPG to PDF
+export const jpgToPdf = async (files: File[]): Promise<File> => {
+  try {
+    // In a real implementation, you would merge all images into one PDF
+    const buffer = await readFileAsArrayBuffer(files[0]);
+    
+    return createResultFile(buffer, 'jpg-to-pdf', 'images.pdf');
+  } catch (error) {
+    console.error('Error converting JPG to PDF:', error);
+    throw new Error('Failed to convert JPG to PDF');
+  }
+};
+
+// PDF to PowerPoint
+export const pdfToPpt = async (file: File): Promise<File> => {
+  try {
+    const buffer = await readFileAsArrayBuffer(file);
+    const fileName = file.name.replace('.pdf', '.pptx');
+    
+    return createResultFile(
+      buffer, 
+      'pdf-to-ppt', 
+      fileName, 
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    );
+  } catch (error) {
+    console.error('Error converting PDF to PowerPoint:', error);
+    throw new Error('Failed to convert PDF to PowerPoint');
+  }
+};
+
+// PowerPoint to PDF
+export const pptToPdf = async (file: File): Promise<File> => {
+  try {
+    const buffer = await readFileAsArrayBuffer(file);
+    const fileName = file.name.replace('.pptx', '.pdf').replace('.ppt', '.pdf');
+    
+    return createResultFile(buffer, 'ppt-to-pdf', fileName);
+  } catch (error) {
+    console.error('Error converting PowerPoint to PDF:', error);
+    throw new Error('Failed to convert PowerPoint to PDF');
+  }
+};
+
+// Split PDF
+export const splitPdf = async (file: File): Promise<File> => {
+  try {
+    const buffer = await readFileAsArrayBuffer(file);
+    
+    return createResultFile(buffer, 'split-pdf', 'split-part1.pdf');
+  } catch (error) {
+    console.error('Error splitting PDF:', error);
+    throw new Error('Failed to split PDF');
+  }
+};
+
+// Rotate PDF
+export const rotatePdf = async (file: File): Promise<File> => {
+  try {
+    const buffer = await readFileAsArrayBuffer(file);
+    
+    return createResultFile(buffer, 'rotate-pdf', file.name);
+  } catch (error) {
+    console.error('Error rotating PDF:', error);
+    throw new Error('Failed to rotate PDF');
+  }
+};
+
 // Process file based on tool ID
 export const processFile = async (toolId: string, files: File[], options?: any): Promise<File> => {
   try {
@@ -185,16 +302,30 @@ export const processFile = async (toolId: string, files: File[], options?: any):
       
       case 'sign-pdf':
         return await signPdf(files[0], options?.signature);
-        
-      case 'chat-pdf':
-      case 'summarize-pdf':
-        // These would require AI integration in a real app
-        // For demo, return a text file with simulated response
-        const content = toolId === 'chat-pdf' 
-          ? 'Chat response: This is a simulated AI chat response about the PDF content.'
-          : 'Summary: This is a simulated AI-generated summary of the PDF content.';
-        
-        return createResultFile(content, toolId, 'result.txt', 'text/plain');
+      
+      case 'pdf-to-excel':
+        return await pdfToExcel(files[0]);
+      
+      case 'excel-to-pdf':
+        return await excelToPdf(files[0]);
+      
+      case 'pdf-to-jpg':
+        return await pdfToJpg(files[0]);
+      
+      case 'jpg-to-pdf':
+        return await jpgToPdf(files);
+      
+      case 'pdf-to-ppt':
+        return await pdfToPpt(files[0]);
+      
+      case 'ppt-to-pdf':
+        return await pptToPdf(files[0]);
+      
+      case 'split-pdf':
+        return await splitPdf(files[0]);
+      
+      case 'rotate-pdf':
+        return await rotatePdf(files[0]);
         
       default:
         // For unimplemented tools, create a simple result file

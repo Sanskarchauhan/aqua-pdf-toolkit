@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { FileIcon, Menu } from 'lucide-react';
 import {
   DropdownMenu,
@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
+  const location = useLocation();
+  
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
@@ -22,14 +24,17 @@ const Navbar = () => {
         </div>
         
         <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 mx-6">
-          <Link to="/" className="text-sm font-medium transition-colors hover:text-primary">
+          <Link to="/" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/' ? 'text-primary' : ''}`}>
             Home
           </Link>
-          <Link to="/tools" className="text-sm font-medium transition-colors hover:text-primary">
+          <Link to="/tools" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/tools' || location.pathname.startsWith('/tools/') ? 'text-primary' : ''}`}>
             All Tools
           </Link>
-          <Link to="/workspace" className="text-sm font-medium transition-colors hover:text-primary">
+          <Link to="/workspace" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/workspace' ? 'text-primary' : ''}`}>
             Workspace
+          </Link>
+          <Link to="/get-started" className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/get-started' ? 'text-primary' : ''}`}>
+            Get Started
           </Link>
         </nav>
         
@@ -50,15 +55,26 @@ const Navbar = () => {
               <DropdownMenuItem asChild>
                 <Link to="/workspace">Workspace</Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/get-started">Get Started</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/login">Sign In</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/signup">Sign Up</Link>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
         
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" className="hidden md:flex">
-            Sign In
+        <div className="ml-auto hidden md:flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/login">Sign In</Link>
           </Button>
-          <Button size="sm">Get Started</Button>
+          <Button size="sm" asChild>
+            <Link to="/signup">Sign Up</Link>
+          </Button>
         </div>
       </div>
     </header>

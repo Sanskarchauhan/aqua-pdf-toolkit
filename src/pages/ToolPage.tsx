@@ -6,8 +6,8 @@ import Footer from '@/components/layout/Footer';
 import FileUploader from '@/components/shared/FileUploader';
 import { Button } from '@/components/ui/button';
 import {
-  ArrowLeft, Download, FileText, FileUp, Wand2, Layers, 
-  FileCheck, ScanLine, Pencil, Lock, Unlock, Camera, FileSignature
+  ArrowLeft, Download, FileText, FileUp, Layers, 
+  ScanLine, Pencil, Lock, Unlock, Camera, FileSignature
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -206,19 +206,73 @@ const ToolPage = () => {
       },
       maxFiles: 3,
     },
-    'chat-pdf': {
-      id: 'chat-pdf',
-      name: 'Chat with PDF',
-      description: 'Ask questions about your PDF and get AI-powered answers.',
-      icon: Wand2,
+    'pdf-to-excel': {
+      id: 'pdf-to-excel',
+      name: 'PDF to Excel',
+      description: 'Convert PDF to Excel spreadsheets.',
+      icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
     },
-    'summarize-pdf': {
-      id: 'summarize-pdf',
-      name: 'AI PDF Summarizer',
-      description: 'Get an AI-generated summary of your PDF document.',
-      icon: FileCheck,
+    'excel-to-pdf': {
+      id: 'excel-to-pdf',
+      name: 'Excel to PDF',
+      description: 'Convert Excel spreadsheets to PDF.',
+      icon: FileText,
+      acceptedFormats: { 
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+        'application/vnd.ms-excel': ['.xls'] 
+      },
+      maxFiles: 3,
+    },
+    'pdf-to-jpg': {
+      id: 'pdf-to-jpg',
+      name: 'PDF to JPG',
+      description: 'Convert PDF to JPG images.',
+      icon: FileText,
+      acceptedFormats: { 'application/pdf': ['.pdf'] },
+      maxFiles: 1,
+    },
+    'jpg-to-pdf': {
+      id: 'jpg-to-pdf',
+      name: 'JPG to PDF',
+      description: 'Convert JPG images to PDF.',
+      icon: FileText,
+      acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'] },
+      maxFiles: 20,
+    },
+    'pdf-to-ppt': {
+      id: 'pdf-to-ppt',
+      name: 'PDF to PPT',
+      description: 'Convert PDF to PowerPoint presentations.',
+      icon: FileText,
+      acceptedFormats: { 'application/pdf': ['.pdf'] },
+      maxFiles: 1,
+    },
+    'ppt-to-pdf': {
+      id: 'ppt-to-pdf',
+      name: 'PPT to PDF',
+      description: 'Convert PowerPoint presentations to PDF.',
+      icon: FileText,
+      acceptedFormats: { 
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+        'application/vnd.ms-powerpoint': ['.ppt'] 
+      },
+      maxFiles: 3,
+    },
+    'split-pdf': {
+      id: 'split-pdf',
+      name: 'Split PDF',
+      description: 'Split PDFs into multiple documents.',
+      icon: FileText,
+      acceptedFormats: { 'application/pdf': ['.pdf'] },
+      maxFiles: 1,
+    },
+    'rotate-pdf': {
+      id: 'rotate-pdf',
+      name: 'Rotate PDF',
+      description: 'Rotate PDF pages to the correct orientation.',
+      icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
     },
@@ -264,6 +318,54 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       requiresSignature: true,
+    },
+    'pdf-scanner': {
+      id: 'pdf-scanner',
+      name: 'PDF Scanner',
+      description: 'Scan documents to PDF using camera.',
+      icon: Camera,
+      acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
+      maxFiles: 10,
+    },
+    'add-page-numbers': {
+      id: 'add-page-numbers',
+      name: 'Add Page Numbers',
+      description: 'Add page numbers to your PDF documents.',
+      icon: Pencil,
+      acceptedFormats: { 'application/pdf': ['.pdf'] },
+      maxFiles: 1,
+    },
+    'delete-pages': {
+      id: 'delete-pages',
+      name: 'Delete PDF Pages',
+      description: 'Remove pages from PDF documents.',
+      icon: Pencil,
+      acceptedFormats: { 'application/pdf': ['.pdf'] },
+      maxFiles: 1,
+    },
+    'extract-pages': {
+      id: 'extract-pages',
+      name: 'Extract PDF Pages',
+      description: 'Extract specific pages from PDF documents.',
+      icon: Pencil,
+      acceptedFormats: { 'application/pdf': ['.pdf'] },
+      maxFiles: 1,
+    },
+    'annotate-pdf': {
+      id: 'annotate-pdf',
+      name: 'Annotate PDF',
+      description: 'Add comments and annotations to your PDFs.',
+      icon: Pencil,
+      acceptedFormats: { 'application/pdf': ['.pdf'] },
+      maxFiles: 1,
+    },
+    'crop-pdf': {
+      id: 'crop-pdf',
+      name: 'Crop PDF',
+      description: 'Crop pages in PDF documents.',
+      icon: Pencil,
+      acceptedFormats: { 'application/pdf': ['.pdf'] },
+      maxFiles: 1,
     },
   };
   

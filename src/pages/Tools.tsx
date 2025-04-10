@@ -6,8 +6,8 @@ import Footer from '@/components/layout/Footer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
-  FileText, FileUp, FilePlus, Wand2, FileCheck, FileSearch, 
-  ScanLine, ShieldCheck, Layers, Pencil, Search, FileSignature,
+  FileText, FileUp, FilePlus, Layers, FileCheck, FileSearch, 
+  ScanLine, ShieldCheck, Pencil, Search, FileSignature,
   Lock, Unlock, Edit, Settings, Camera
 } from 'lucide-react';
 
@@ -41,12 +41,6 @@ const categories: Category[] = [
     name: 'Convert',
     description: 'Transform PDFs to and from other formats',
     icon: FileText
-  },
-  {
-    id: 'ai-tools',
-    name: 'AI Tools',
-    description: 'Leverage AI to analyze and enhance PDFs',
-    icon: Wand2
   },
   {
     id: 'organize',
@@ -157,34 +151,6 @@ const allTools: Tool[] = [
     description: 'Convert PDF to JPG images',
     icon: FileText,
     category: 'convert'
-  },
-  {
-    id: 'chat-pdf',
-    name: 'Chat with PDF',
-    description: 'Ask questions and get answers from your PDFs',
-    icon: Wand2,
-    category: 'ai-tools'
-  },
-  {
-    id: 'summarize-pdf',
-    name: 'AI PDF Summarizer',
-    description: 'Get AI-powered summaries of your documents',
-    icon: FileCheck,
-    category: 'ai-tools'
-  },
-  {
-    id: 'question-generator',
-    name: 'AI Question Generator',
-    description: 'Generate questions from your PDF content',
-    icon: FileSearch,
-    category: 'ai-tools'
-  },
-  {
-    id: 'translate-pdf',
-    name: 'Translate PDF',
-    description: 'Translate PDF documents to other languages',
-    icon: Wand2,
-    category: 'ai-tools'
   },
   {
     id: 'merge-pdf',

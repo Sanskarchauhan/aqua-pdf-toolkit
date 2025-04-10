@@ -3,8 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
-  FileText, FileUp, FilePlus, Wand2, FileCheck, FileSearch, 
-  ScanLine, ShieldCheck, Layers, Pencil
+  FileText, FileUp, FilePlus, ScanLine, ShieldCheck, Layers, Pencil
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -62,26 +61,6 @@ const categories: ToolCategory[] = [
         name: 'PDF to Word', 
         icon: FileText,
         description: 'Convert PDF to editable Word documents'
-      },
-    ],
-  },
-  {
-    id: 'ai-tools',
-    title: 'AI Tools',
-    description: 'Leverage AI to analyze and enhance PDFs',
-    icon: Wand2,
-    tools: [
-      { 
-        id: 'chat-pdf', 
-        name: 'Chat with PDF', 
-        icon: Wand2,
-        description: 'Ask questions and get answers from your PDFs'
-      },
-      { 
-        id: 'summarize-pdf', 
-        name: 'AI PDF Summarizer', 
-        icon: FileCheck,
-        description: 'Get AI-powered summaries of your documents'
       },
     ],
   },
@@ -146,9 +125,9 @@ const Index = () => {
     'compress-pdf', 
     'merge-pdf', 
     'pdf-converter', 
-    'chat-pdf', 
     'edit-pdf', 
-    'pdf-ocr'
+    'pdf-ocr',
+    'pdf-to-word'
   ];
 
   // Helper function to find a tool by ID
@@ -177,8 +156,8 @@ const Index = () => {
             <Button size="lg" asChild>
               <Link to="/tools">Explore Tools</Link>
             </Button>
-            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
-              <Link to="/workspace">Go to Workspace</Link>
+            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10" asChild>
+              <Link to="/signup">Sign Up</Link>
             </Button>
           </div>
         </div>
@@ -277,10 +256,10 @@ const Index = () => {
             </div>
             
             <div className="flex flex-col items-center text-center p-6">
-              <FileSearch className="feature-icon" />
-              <h3 className="text-xl font-medium mb-2">Advanced AI Tools</h3>
+              <FileText className="feature-icon" />
+              <h3 className="text-xl font-medium mb-2">Wide Format Support</h3>
               <p className="text-muted-foreground">
-                Leverage AI to extract insights, summarize content, and more from your documents.
+                Convert between PDF and popular formats like Word, Excel, PowerPoint, and images.
               </p>
             </div>
             
@@ -302,9 +281,14 @@ const Index = () => {
           <p className="text-xl mb-8 max-w-2xl mx-auto">
             No registration required — just upload your files and get started!
           </p>
-          <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10" asChild>
-            <Link to="/tools">Get Started for Free</Link>
-          </Button>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10" asChild>
+              <Link to="/tools">Get Started for Free</Link>
+            </Button>
+            <Button size="lg" className="bg-white text-primary hover:bg-white/90" asChild>
+              <Link to="/signup">Create an Account</Link>
+            </Button>
+          </div>
         </div>
       </section>
       
