@@ -11,9 +11,16 @@ import {
   Eraser, 
   Save, 
   Scissors, 
-  FilePlus
+  FilePlus,
+  Pencil,
+  ZoomIn,
+  ZoomOut,
+  Undo
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useTheme } from '@/components/theme/ThemeProvider';
 
 // Set up the worker for pdf.js
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -33,8 +40,11 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [mode, setMode] = useState<'view' | 'edit' | 'delete' | 'extract'>('view');
   const [textPosition, setTextPosition] = useState<{ x: number, y: number }>({ x: 100, y: 100 });
+  const [scale, setScale] = useState<number>(1.0);
+  const [showGrid, setShowGrid] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { resolvedTheme } = useTheme();
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -49,6 +59,8 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
 
   const previousPage = () => changePage(-1);
   const nextPage = () => changePage(1);
+  const zoomIn = () => setScale(prev => Math.min(prev + 0.1, 2.0));
+  const zoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
 
   const handleAddTextClick = () => {
     setMode('edit');
@@ -69,13 +81,21 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
     }
   };
 
+  const handleUndoEdit = () => {
+    setEdits(prev => prev.slice(0, -1));
+    toast({
+      title: "Edit Undone",
+      description: "The last edit has been removed."
+    });
+  };
+
   const handlePageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (mode === 'edit' && currentEdit.type === 'text' && currentEdit.content) {
       // Calculate position relative to the page
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
-        const y = rect.height - (e.clientY - rect.top); // PDF coordinates origin is bottom-left
+        const y = e.clientY - rect.top; 
         
         // Add the new edit
         setEdits([...edits, {
@@ -102,7 +122,7 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
       if (prev.includes(pageNum)) {
         return prev.filter(p => p !== pageNum);
       } else {
-        return [...prev, pageNum];
+        return [...prev, pageNum].sort((a, b) => a - b);
       }
     });
   };
@@ -186,6 +206,26 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={zoomOut}
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          
+          <span className="text-xs">
+            {Math.round(scale * 100)}%
+          </span>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={zoomIn}
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
         </div>
         
         <div className="flex items-center space-x-2">
@@ -219,6 +259,17 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
             Extract Pages
           </Button>
           
+          {edits.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleUndoEdit}
+            >
+              <Undo className="h-4 w-4 mr-1" />
+              Undo
+            </Button>
+          )}
+          
           <Button
             variant="default"
             size="sm"
@@ -231,6 +282,18 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
         </div>
       </div>
       
+      {/* Grid and alignment tools */}
+      <div className="flex items-center mb-2 space-x-2">
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="show-grid" 
+            checked={showGrid}
+            onCheckedChange={setShowGrid}
+          />
+          <Label htmlFor="show-grid" className="text-sm">Show Grid</Label>
+        </div>
+      </div>
+      
       {/* Edit Form */}
       {mode === 'edit' && currentEdit.type === 'text' && (
         <div className="mb-4 p-4 border rounded-md bg-background">
@@ -240,6 +303,7 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
             onChange={handleTextContentChange}
             placeholder="Enter text to add to the document"
             className="mb-2"
+            autoFocus
           />
           <div className="flex space-x-2 mb-2">
             <div>
@@ -308,15 +372,15 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
           <h3 className="text-sm font-medium mb-2">
             {mode === 'delete' ? 'Select Pages to Delete' : 'Select Pages to Extract'}
           </h3>
-          <div className="grid grid-cols-8 gap-2 mb-4">
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 mb-4">
             {Array.from({ length: numPages }, (_, i) => i + 1).map((pageNum) => (
               <button
                 key={`page-${pageNum}`}
                 onClick={() => handleTogglePage(pageNum)}
-                className={`p-2 border rounded text-center ${
+                className={`p-2 border rounded text-center transition-all ${
                   selectedPages.includes(pageNum) 
                     ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted'
+                    : 'bg-muted hover:bg-muted/70'
                 }`}
               >
                 {pageNum}
@@ -350,36 +414,61 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
       {/* PDF Display */}
       <div 
         ref={containerRef}
-        className="border border-muted rounded-md overflow-auto"
+        className={`border rounded-md overflow-auto relative ${showGrid ? 'bg-grid' : ''}`}
         onClick={handlePageClick}
+        style={{ 
+          minHeight: '400px',
+          backgroundSize: '20px 20px',
+          backgroundImage: showGrid ? `linear-gradient(to right, ${resolvedTheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'} 1px, transparent 1px),
+                                      linear-gradient(to bottom, ${resolvedTheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'} 1px, transparent 1px)` : 'none'
+        }}
       >
-        {file && (
+        {file ? (
           <Document 
             file={file} 
             onLoadSuccess={onDocumentLoadSuccess} 
             className="pdf-document"
+            loading={
+              <div className="flex justify-center items-center h-64">
+                <div className="w-10 h-10 border-4 border-t-transparent border-primary rounded-full animate-spin"></div>
+              </div>
+            }
+            error={
+              <div className="flex flex-col justify-center items-center h-64 text-center p-4">
+                <Pencil className="h-10 w-10 text-destructive mb-2" />
+                <p className="text-destructive font-medium">Error loading PDF</p>
+                <p className="text-sm text-muted-foreground mt-2">The file may be corrupted or password protected.</p>
+              </div>
+            }
           >
             <Page 
               pageNumber={pageNumber} 
-              className="pdf-page"
+              className="pdf-page mx-auto"
               renderTextLayer={true}
               renderAnnotationLayer={true}
+              scale={scale}
+              canvasBackground={resolvedTheme === 'dark' ? '#2d2d2d' : '#ffffff'}
             />
           </Document>
+        ) : (
+          <div className="flex flex-col justify-center items-center h-64 text-center p-4">
+            <Pencil className="h-10 w-10 text-muted-foreground mb-2" />
+            <p className="font-medium">No PDF loaded</p>
+            <p className="text-sm text-muted-foreground mt-2">Upload a PDF file to edit it.</p>
+          </div>
         )}
         
         {/* Visual indication of edits on current page */}
-        <div className="relative">
+        <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
           {edits
             .filter(edit => edit.page === pageNumber - 1)
             .map((edit, index) => (
               <div 
                 key={`edit-${index}`}
-                className="absolute bg-yellow-100 bg-opacity-50 p-1 border border-yellow-400 rounded"
+                className="absolute bg-yellow-100 bg-opacity-50 p-1 border border-yellow-400 rounded dark:bg-yellow-900 dark:border-yellow-600 dark:bg-opacity-70 dark:text-white"
                 style={{ 
                   left: `${edit.x}px`, 
-                  bottom: `${edit.y}px`,
-                  transform: 'translateY(-100%)'
+                  top: `${edit.y}px`,
                 }}
               >
                 <p className="text-xs">{edit.content}</p>

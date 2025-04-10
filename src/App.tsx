@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +15,27 @@ import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import GetStarted from "./pages/GetStarted";
 import { AuthProvider } from "./contexts/AuthContext";
+
+// Function to set initial theme from localStorage to prevent flashing
+const setInitialTheme = () => {
+  const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
+  
+  if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else if (savedTheme === 'light') {
+    document.documentElement.classList.add('light');
+  } else {
+    // If theme is system or not set
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.add('light');
+    }
+  }
+};
+
+// Execute immediately to prevent flashing
+setInitialTheme();
 
 const App = () => {
   // Create a client for React Query

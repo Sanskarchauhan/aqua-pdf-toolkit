@@ -6,6 +6,7 @@ type Theme = 'light' | 'dark' | 'system';
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  resolvedTheme: 'light' | 'dark';
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -24,6 +25,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     return savedTheme || 'system';
   });
+  
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+
+  // Function to determine the actual theme based on system preference
+  const getResolvedTheme = (themeValue: Theme): 'light' | 'dark' => {
+    if (themeValue === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return themeValue;
+  };
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -31,12 +42,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Remove both classes first
     root.classList.remove('light', 'dark');
     
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
-    }
+    // Determine and apply the resolved theme
+    const newResolvedTheme = getResolvedTheme(theme);
+    setResolvedTheme(newResolvedTheme);
+    root.classList.add(newResolvedTheme);
+    
+    // Apply a transition class for smooth theme changes
+    root.style.transition = 'background-color 0.3s ease, color 0.3s ease';
     
     // Save theme to localStorage
     localStorage.setItem('theme', theme);
@@ -50,15 +62,22 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     const handleChange = () => {
       const root = window.document.documentElement;
+      const newResolvedTheme = mediaQuery.matches ? 'dark' : 'light';
+      
+      setResolvedTheme(newResolvedTheme);
       root.classList.remove('light', 'dark');
-      root.classList.add(mediaQuery.matches ? 'dark' : 'light');
+      root.classList.add(newResolvedTheme);
     };
     
+    // Initial check
+    handleChange();
+    
+    // Add listener for changes
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  const value = { theme, setTheme };
+  const value = { theme, setTheme, resolvedTheme };
   
   return (
     <ThemeContext.Provider value={value}>
