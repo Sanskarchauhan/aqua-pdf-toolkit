@@ -1,4 +1,3 @@
-
 import { toast } from '@/hooks/use-toast';
 import { PDFDocument, degrees, StandardFonts, rgb } from 'pdf-lib';
 import { saveAs } from 'file-saver';
@@ -247,20 +246,19 @@ export const protectPdf = async (file: File, password: string): Promise<File> =>
     
     // Set the password for the PDF using the correct pdf-lib options
     const encryptedBytes = await pdfDoc.save({
-      // Use the correct options for password protection in pdf-lib
-      permissions: {
-        printing: 'highResolution',
-        modifying: false,
-        copying: false,
-        annotating: false,
-        fillingForms: false,
-        contentAccessibility: true,
-        documentAssembly: false,
-      },
-      // Add encryption instead of userPassword
+      // Use the correct options for PDF encryption
       encryption: {
         userPassword: password,
         ownerPassword: password,
+        permissions: {
+          printing: 'highResolution',
+          modifying: false,
+          copying: false,
+          annotating: false,
+          fillingForms: false,
+          contentAccessibility: true,
+          documentAssembly: false,
+        },
       },
     });
     
