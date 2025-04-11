@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import ToolDebug from '@/components/debug/ToolDebug';
 import ToolCard from '@/components/tools/ToolCard';
 import PasswordDialog from '@/components/shared/PasswordDialog';
-import SignatureCanvas from '@/components/shared/SignatureCanvas';
 import { processFile, downloadFile } from '@/utils/fileProcessing';
 import PDFViewer from '@/components/shared/PDFViewer';
 import PDFEditor from '@/components/shared/PDFEditor';
@@ -31,7 +30,6 @@ interface ToolInfo {
   acceptedFormats: Record<string, string[]>;
   maxFiles: number;
   requiresPassword?: boolean;
-  requiresSignature?: boolean;
   isEditTool?: boolean;
   isPremium?: boolean;
 }
@@ -50,12 +48,10 @@ const ToolPage = () => {
   
   const [showDebug, setShowDebug] = useState<boolean>(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState<boolean>(false);
-  const [showSignatureDialog, setShowSignatureDialog] = useState<boolean>(false);
-  const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
   const [password, setPassword] = useState<string>('');
-  const [signatureData, setSignatureData] = useState<string>('');
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [edits, setEdits] = useState<Array<{type: string, content: string, page: number, x: number, y: number}>>([]);
+  const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -150,11 +146,6 @@ const ToolPage = () => {
       return;
     }
     
-    if (toolInfo?.requiresSignature && !signatureData) {
-      setShowSignatureDialog(true);
-      return;
-    }
-    
     // Increment trial count for non-subscribed users
     if (!user?.isSubscribed) {
       increaseTrialCount();
@@ -175,10 +166,6 @@ const ToolPage = () => {
               
               if (toolInfo?.requiresPassword) {
                 options.password = password;
-              }
-              
-              if (toolInfo?.requiresSignature) {
-                options.signature = signatureData;
               }
               
               if (toolId === 'delete-pages' && selectedPages.length > 0) {
@@ -227,19 +214,12 @@ const ToolPage = () => {
     handleProcess();
   };
   
-  const handleSignatureSave = (data: string) => {
-    setSignatureData(data);
-    setShowSignatureDialog(false);
-    handleProcess();
-  };
-  
   const handleReset = () => {
     setFiles([]);
     setCompleted(false);
     setProgress(0);
     setResultFile(null);
     setPassword('');
-    setSignatureData('');
     setSelectedPages([]);
     setEdits([]);
   };
@@ -401,15 +381,6 @@ const ToolPage = () => {
       maxFiles: 1,
       requiresPassword: true,
     },
-    'sign-pdf': {
-      id: 'sign-pdf',
-      name: 'Sign PDF',
-      description: 'Add your electronic signature to PDF documents.',
-      icon: FileSignature,
-      acceptedFormats: { 'application/pdf': ['.pdf'] },
-      maxFiles: 1,
-      requiresSignature: true,
-    },
     'pdf-scanner': {
       id: 'pdf-scanner',
       name: 'PDF Scanner',
@@ -438,6 +409,8 @@ const ToolPage = () => {
       isEditTool: true,
     },
   };
+  
+  // Removed sign-pdf tool from the list since we're removing SignatureCanvas functionality
   
   const toolInfo = toolId ? tools[toolId] : null;
   
@@ -581,12 +554,6 @@ const ToolPage = () => {
           }
           onClose={() => setShowPasswordDialog(false)}
           onConfirm={handlePasswordConfirm}
-        />
-        
-        <SignatureCanvas
-          isOpen={showSignatureDialog}
-          onClose={() => setShowSignatureDialog(false)}
-          onSave={handleSignatureSave}
         />
         
         <PremiumModal
