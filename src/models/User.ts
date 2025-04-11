@@ -5,6 +5,9 @@ export interface User {
   email: string;
   isSubscribed: boolean;
   trialCount: number;
+  planExpiresAt?: string; // ISO date string
+  lastPaymentDate?: string; // ISO date string
+  paymentMethod?: string; // 'card', 'paypal', etc.
 }
 
 export interface AuthState {
@@ -19,3 +22,19 @@ export interface UserWithPassword extends User {
 }
 
 export type Theme = 'light' | 'dark' | 'system';
+
+export interface PlanInfo {
+  name: string;
+  price: number;
+  billingCycle: 'monthly' | 'yearly';
+  features: string[];
+  isPopular?: boolean;
+}
+
+export interface PaymentDetails {
+  cardNumber?: string;
+  expiryDate?: string;
+  cvv?: string;
+  cardholderName?: string;
+  email?: string;
+}

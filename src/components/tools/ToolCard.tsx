@@ -101,11 +101,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
           
           {showPreview && resultFile && (
             <div className="p-4 bg-muted/30 border-t">
-              <PDFViewer 
-                file={resultFile}
-                onDownload={() => downloadFile(resultFile)}
-                className="max-h-[500px]"
-              />
+              <PDFViewer file={resultFile} className="max-h-[500px]" />
             </div>
           )}
         </div>
