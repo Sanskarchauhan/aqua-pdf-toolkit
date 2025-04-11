@@ -33,9 +33,14 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
       
       // Initialize signature pad
       signaturePadRef.current = new SignaturePad(canvas, {
-        penColor,
         backgroundColor: 'rgba(255, 255, 255, 0)'
       });
+      
+      // Set pen color manually using the options object
+      if (signaturePadRef.current) {
+        // Using the correct method to set color
+        signaturePadRef.current.penColor = penColor;
+      }
       
       return () => {
         if (signaturePadRef.current) {
@@ -48,7 +53,8 @@ const SignatureCanvas: React.FC<SignatureCanvasProps> = ({
 
   useEffect(() => {
     if (signaturePadRef.current) {
-      signaturePadRef.current.penColor = penColor;
+      // Using a type assertion to set the pen color
+      (signaturePadRef.current as any).penColor = penColor;
     }
   }, [penColor]);
 

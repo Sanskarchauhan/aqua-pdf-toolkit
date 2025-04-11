@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -6,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { Helmet } from "react-helmet";
 import Index from "./pages/Index";
 import Tools from "./pages/Tools";
 import Workspace from "./pages/Workspace";
@@ -27,7 +27,6 @@ const setInitialTheme = () => {
   } else if (savedTheme === 'light') {
     document.documentElement.classList.add('light');
   } else {
-    // If theme is system or not set
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.documentElement.classList.add('dark');
     } else {
@@ -100,11 +99,15 @@ const AnimatedRoutes = () => {
 };
 
 const App = () => {
-  // Create a client for React Query
   const [queryClient] = useState(() => new QueryClient());
 
   return (
     <QueryClientProvider client={queryClient}>
+      <Helmet>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="AquaPDF is an all-in-one PDF toolkit for editing, converting, compressing and signing PDF documents online." />
+        <meta name="keywords" content="pdf editor, pdf converter, pdf tools, compress pdf, merge pdf, split pdf, pdf to word" />
+      </Helmet>
       <ThemeProvider>
         <AuthProvider>
           <TooltipProvider>

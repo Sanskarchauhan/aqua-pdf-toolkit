@@ -73,8 +73,16 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter;
   }
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 }
 
 /* Modern UI Components */
@@ -107,7 +115,42 @@
   @apply text-2xl font-bold mb-4 text-foreground/90 flex items-center gap-2;
 }
 
+/* Gradient Button */
+.gradient-button {
+  @apply relative overflow-hidden bg-gradient-to-r from-primary to-accent transition-all duration-300;
+}
+
+.gradient-button:hover {
+  @apply shadow-lg shadow-primary/20;
+}
+
+.gradient-button::after {
+  content: '';
+  @apply absolute inset-0 bg-white opacity-0 transition-opacity duration-300;
+}
+
+.gradient-button:hover::after {
+  @apply opacity-10;
+}
+
 /* Animations */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 15s ease infinite;
+}
+
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;
 }
@@ -135,6 +178,8 @@
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   animation: shine 3s linear infinite;
 }
+
+/* ... keep existing code (keyframes for fadeIn, scaleIn, etc.) */
 
 @keyframes fadeIn {
   from {
@@ -217,6 +262,7 @@
 }
 
 /* PDF Viewer Styles */
+/* ... keep existing code (pdf-viewer, pdf-page, etc.) */
 .pdf-viewer {
   @apply bg-muted/50 rounded-xl p-4 w-full mx-auto my-4 shadow-md;
   max-height: 600px;
