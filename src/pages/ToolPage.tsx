@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FileUploader from '@/components/shared/FileUploader';
 import { Button } from '@/components/ui/button';
+import AnimatedButton from '@/components/animation/AnimatedButton';
 import {
   ArrowLeft, Download, FileText, FileUp, Layers, 
   ScanLine, Pencil, Lock, Unlock, Camera, FileSignature
@@ -16,6 +18,10 @@ import SignatureCanvas from '@/components/shared/SignatureCanvas';
 import { processFile, downloadFile } from '@/utils/fileProcessing';
 import PDFViewer from '@/components/shared/PDFViewer';
 import PDFEditor from '@/components/shared/PDFEditor';
+import { useAuth } from '@/contexts/AuthContext';
+import PremiumModal from '@/components/shared/PremiumModal';
+import AnimatedPage from '@/components/animation/AnimatedPage';
+import { motion } from 'framer-motion';
 
 interface ToolInfo {
   id: string;
@@ -27,12 +33,14 @@ interface ToolInfo {
   requiresPassword?: boolean;
   requiresSignature?: boolean;
   isEditTool?: boolean;
+  isPremium?: boolean;
 }
 
 const ToolPage = () => {
   const { toolId } = useParams<{ toolId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, increaseTrialCount, hasAvailableTrials } = useAuth();
   
   const [files, setFiles] = useState<File[]>([]);
   const [processing, setProcessing] = useState<boolean>(false);
@@ -43,6 +51,7 @@ const ToolPage = () => {
   const [showDebug, setShowDebug] = useState<boolean>(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState<boolean>(false);
   const [showSignatureDialog, setShowSignatureDialog] = useState<boolean>(false);
+  const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
   const [password, setPassword] = useState<string>('');
   const [signatureData, setSignatureData] = useState<string>('');
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
@@ -130,6 +139,12 @@ const ToolPage = () => {
       return;
     }
     
+    // Check for premium access
+    if (toolInfo?.isPremium && !hasAvailableTrials) {
+      setShowPremiumModal(true);
+      return;
+    }
+    
     if (toolInfo?.requiresPassword && !password) {
       setShowPasswordDialog(true);
       return;
@@ -138,6 +153,11 @@ const ToolPage = () => {
     if (toolInfo?.requiresSignature && !signatureData) {
       setShowSignatureDialog(true);
       return;
+    }
+    
+    // Increment trial count for non-subscribed users
+    if (!user?.isSubscribed) {
+      increaseTrialCount();
     }
     
     setProcessing(true);
@@ -259,6 +279,7 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 3,
+      isPremium: true,
     },
     'word-to-pdf': {
       id: 'word-to-pdf',
@@ -278,6 +299,7 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
+      isPremium: true,
     },
     'excel-to-pdf': {
       id: 'excel-to-pdf',
@@ -313,6 +335,7 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
+      isPremium: true,
     },
     'ppt-to-pdf': {
       id: 'ppt-to-pdf',
@@ -348,6 +371,7 @@ const ToolPage = () => {
       icon: ScanLine,
       acceptedFormats: { 'application/pdf': ['.pdf'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 2,
+      isPremium: true,
     },
     'edit-pdf': {
       id: 'edit-pdf',
@@ -357,6 +381,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       isEditTool: true,
+      isPremium: true,
     },
     'unlock-pdf': {
       id: 'unlock-pdf',
@@ -392,6 +417,7 @@ const ToolPage = () => {
       icon: Camera,
       acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 10,
+      isPremium: true,
     },
     'delete-pages': {
       id: 'delete-pages',
@@ -422,7 +448,7 @@ const ToolPage = () => {
         <div className="container mx-auto px-4 py-12 text-center">
           <h1 className="text-3xl font-bold mb-4">Tool Not Found</h1>
           <p className="mb-8">The tool you're looking for doesn't exist or is not yet implemented.</p>
-          <Button onClick={() => navigate('/tools')} className="bg-primary hover:bg-primary/90">View All Tools</Button>
+          <AnimatedButton onClick={() => navigate('/tools')} className="bg-primary hover:bg-primary/90">View All Tools</AnimatedButton>
         </div>
         <Footer />
       </>
@@ -435,7 +461,7 @@ const ToolPage = () => {
   };
   
   return (
-    <>
+    <AnimatedPage>
       <Navbar />
       
       <div className="container mx-auto px-4 py-12 max-w-5xl">
@@ -448,7 +474,12 @@ const ToolPage = () => {
           Back to All Tools
         </Button>
         
-        <div className="flex items-center gap-3 mb-6">
+        <motion.div 
+          className="flex items-center gap-3 mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
           <div className="bg-primary/10 p-3 rounded-full">
             {getIcon()}
           </div>
@@ -456,7 +487,21 @@ const ToolPage = () => {
             <h1 className="text-3xl font-bold">{toolInfo.name}</h1>
             <p className="text-muted-foreground">{toolInfo.description}</p>
           </div>
-        </div>
+          {toolInfo.isPremium && (
+            <div className="ml-auto">
+              <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs py-1 px-2 rounded-full flex items-center">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="h-3 w-3 mr-1"
+                >
+                  <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg>
+                Premium Feature
+              </div>
+            </div>
+          )}
+        </motion.div>
         
         <ToolCard
           toolId={toolId || ''}
@@ -477,7 +522,12 @@ const ToolPage = () => {
           />
           
           {files.length > 0 && files[0].type.includes('pdf') && !processing && (
-            <div className="mt-6 border rounded-xl overflow-hidden bg-muted/20">
+            <motion.div 
+              className="mt-6 border rounded-xl overflow-hidden bg-muted/20"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
               {toolInfo.isEditTool ? (
                 <PDFEditor
                   file={files[0]}
@@ -488,7 +538,36 @@ const ToolPage = () => {
               ) : (
                 <PDFViewer file={files[0]} className="max-h-[400px]" />
               )}
-            </div>
+            </motion.div>
+          )}
+          
+          {/* Trial count indicator for non-subscribed users */}
+          {user && !user.isSubscribed && (
+            <motion.div 
+              className="mt-4 text-center text-sm text-muted-foreground"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <p>
+                You've used {user.trialCount} of 3 free trials
+                {user.trialCount >= 3 && (
+                  <Button
+                    variant="link"
+                    className="text-primary p-0 h-auto font-normal ml-2"
+                    onClick={() => navigate('/pricing')}
+                  >
+                    Upgrade to Premium
+                  </Button>
+                )}
+              </p>
+              <div className="w-full bg-muted/50 rounded-full h-1.5 mt-1">
+                <div 
+                  className="h-1.5 rounded-full bg-primary"
+                  style={{ width: `${Math.min(100, (user.trialCount / 3) * 100)}%` }}
+                ></div>
+              </div>
+            </motion.div>
           )}
         </ToolCard>
         
@@ -510,6 +589,11 @@ const ToolPage = () => {
           onSave={handleSignatureSave}
         />
         
+        <PremiumModal
+          isOpen={showPremiumModal}
+          onClose={() => setShowPremiumModal(false)}
+        />
+        
         {showDebug && (
           <ToolDebug 
             toolId={toolId || ''}
@@ -521,13 +605,24 @@ const ToolPage = () => {
           />
         )}
         
-        <div className="mt-12 bg-card border rounded-xl p-8 shadow-sm">
+        <motion.div 
+          className="mt-12 bg-card border rounded-xl p-8 shadow-sm"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+        >
           <h2 className="text-2xl font-bold mb-6 flex items-center">
             <FileText className="mr-2 h-5 w-5 text-primary" />
             How It Works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-background p-6 rounded-xl border shadow-sm">
+            <motion.div 
+              className="bg-background p-6 rounded-xl border shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              whileHover={{ y: -5, transition: { duration: 0.3 } }}
+            >
               <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center mb-4">
                 <span className="font-medium">1</span>
               </div>
@@ -535,9 +630,15 @@ const ToolPage = () => {
               <p className="text-muted-foreground">
                 Select or drag and drop your {toolInfo.maxFiles > 1 ? 'files' : 'file'} into the upload area.
               </p>
-            </div>
+            </motion.div>
             
-            <div className="bg-background p-6 rounded-xl border shadow-sm">
+            <motion.div 
+              className="bg-background p-6 rounded-xl border shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              whileHover={{ y: -5, transition: { duration: 0.3 } }}
+            >
               <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center mb-4">
                 <span className="font-medium">2</span>
               </div>
@@ -545,9 +646,15 @@ const ToolPage = () => {
               <p className="text-muted-foreground">
                 Click the Process button and our system will handle the conversion.
               </p>
-            </div>
+            </motion.div>
             
-            <div className="bg-background p-6 rounded-xl border shadow-sm">
+            <motion.div 
+              className="bg-background p-6 rounded-xl border shadow-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              whileHover={{ y: -5, transition: { duration: 0.3 } }}
+            >
               <div className="bg-primary/10 w-10 h-10 rounded-full flex items-center justify-center mb-4">
                 <span className="font-medium">3</span>
               </div>
@@ -555,13 +662,13 @@ const ToolPage = () => {
               <p className="text-muted-foreground">
                 Once processing is complete, preview and download your {toolId?.includes('merge') ? 'merged file' : 'processed files'}.
               </p>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
       
       <Footer />
-    </>
+    </AnimatedPage>
   );
 };
 

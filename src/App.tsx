@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import Index from "./pages/Index";
 import Tools from "./pages/Tools";
@@ -14,7 +14,9 @@ import NotFound from "./pages/NotFound";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import GetStarted from "./pages/GetStarted";
-import { AuthProvider } from "./contexts/AuthContext";
+import Pricing from "./pages/Pricing";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AnimatePresence, motion } from "framer-motion";
 
 // Function to set initial theme from localStorage to prevent flashing
 const setInitialTheme = () => {
@@ -37,6 +39,66 @@ const setInitialTheme = () => {
 // Execute immediately to prevent flashing
 setInitialTheme();
 
+// Auth route wrapper component
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/login', { state: { from: location.pathname } });
+    }
+  }, [isAuthenticated, isLoading, navigate, location]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <>{children}</> : null;
+};
+
+// Animated routes wrapper
+const AnimatedRoutes = () => {
+  const location = useLocation();
+  
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Routes location={location}>
+          <Route path="/" element={<Index />} />
+          <Route path="/tools" element={<Tools />} />
+          <Route path="/tools/:toolId" element={
+            <ProtectedRoute>
+              <ToolPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/workspace" element={
+            <ProtectedRoute>
+              <Workspace />
+            </ProtectedRoute>
+          } />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/get-started" element={<GetStarted />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 const App = () => {
   // Create a client for React Query
   const [queryClient] = useState(() => new QueryClient());
@@ -49,16 +111,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/tools" element={<Tools />} />
-                <Route path="/tools/:toolId" element={<ToolPage />} />
-                <Route path="/workspace" element={<Workspace />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/get-started" element={<GetStarted />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <AnimatedRoutes />
             </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>
