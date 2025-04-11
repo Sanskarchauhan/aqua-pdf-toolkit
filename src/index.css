@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 262 83% 58%;
+    --primary: 198 100% 60%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 220 14% 96%;
@@ -23,7 +22,7 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 262 83% 68%;
+    --accent: 198 100% 70%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
@@ -31,7 +30,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 262 83% 58%;
+    --ring: 198 100% 60%;
 
     --radius: 0.75rem;
   }
@@ -46,7 +45,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 262 83% 58%;
+    --primary: 198 100% 60%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -55,7 +54,7 @@
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 262 83% 68%;
+    --accent: 198 100% 70%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -63,7 +62,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 262 83% 58%;
+    --ring: 198 100% 60%;
   }
 }
 
@@ -73,16 +72,16 @@
   }
 
   body {
-    @apply bg-background text-foreground font-inter;
+    @apply bg-background text-foreground font-nunito;
   }
 }
 
 @font-face {
-  font-family: 'Inter';
+  font-family: 'Nunito';
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  src: url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
 }
 
 /* Modern UI Components */
@@ -96,7 +95,7 @@
 }
 
 .hero-gradient {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.9) 0%, rgba(99, 102, 241, 0.8) 50%, rgba(139, 92, 246, 0.75) 100%);
+  background: linear-gradient(135deg, rgba(67, 181, 226, 0.9) 0%, rgba(99, 178, 241, 0.8) 50%, rgba(139, 215, 246, 0.75) 100%);
 }
 
 .file-drop-zone {
@@ -179,8 +178,6 @@
   animation: shine 3s linear infinite;
 }
 
-/* ... keep existing code (keyframes for fadeIn, scaleIn, etc.) */
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -233,7 +230,7 @@
 .gradient-border {
   position: relative;
   border-radius: var(--radius);
-  background: linear-gradient(to right, #c084fc, #8b5cf6);
+  background: linear-gradient(to right, #43b5e2, #63b2f1);
   padding: 2px;
 }
 
@@ -248,7 +245,7 @@
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-image: linear-gradient(to right, #c084fc, #8b5cf6);
+  background-image: linear-gradient(to right, #43b5e2, #63b2f1);
 }
 
 .card-hover-effect {
@@ -262,7 +259,6 @@
 }
 
 /* PDF Viewer Styles */
-/* ... keep existing code (pdf-viewer, pdf-page, etc.) */
 .pdf-viewer {
   @apply bg-muted/50 rounded-xl p-4 w-full mx-auto my-4 shadow-md;
   max-height: 600px;
@@ -325,5 +321,5 @@
 }
 
 .dark .hero-gradient {
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.8) 0%, rgba(99, 102, 241, 0.7) 50%, rgba(139, 92, 246, 0.6) 100%);
+  background: linear-gradient(135deg, rgba(67, 181, 226, 0.8) 0%, rgba(99, 178, 241, 0.7) 50%, rgba(139, 215, 246, 0.6) 100%);
 }
