@@ -27,8 +27,8 @@ if ($userId !== $_SESSION['user_id']) {
     exit;
 }
 
-// Get current user data
-$stmt = $conn->prepare("SELECT is_subscribed, trial_count FROM users WHERE id = ?");
+// Get current trial count
+$stmt = $conn->prepare("SELECT trial_count, is_subscribed FROM users WHERE id = ?");
 $stmt->bind_param("s", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -41,9 +41,9 @@ if ($result->num_rows === 0) {
 
 $user = $result->fetch_assoc();
 
-// Only increase trial count if not subscribed
+// Only update trial count if user is not subscribed
 if (!(bool)$user['is_subscribed']) {
-    $newTrialCount = (int)$user['trial_count'] + 1;
+    $newTrialCount = $user['trial_count'] + 1;
     
     // Update trial count
     $updateStmt = $conn->prepare("UPDATE users SET trial_count = ? WHERE id = ?");
@@ -52,22 +52,20 @@ if (!(bool)$user['is_subscribed']) {
     if ($updateStmt->execute()) {
         echo json_encode([
             'success' => true,
-            'message' => 'Trial count updated',
+            'message' => 'Trial count updated successfully',
             'trialCount' => $newTrialCount
         ]);
     } else {
         header('HTTP/1.1 500 Internal Server Error');
         echo json_encode(['success' => false, 'message' => 'Error updating trial count']);
     }
-    
     $updateStmt->close();
 } else {
-    // User is subscribed, no need to increase trial count
+    // User is subscribed, no need to increment trial
     echo json_encode([
         'success' => true,
-        'message' => 'User is subscribed, no trial count needed',
-        'trialCount' => (int)$user['trial_count'],
-        'isSubscribed' => true
+        'message' => 'User is subscribed, no trial count update needed',
+        'trialCount' => $user['trial_count']
     ]);
 }
 
