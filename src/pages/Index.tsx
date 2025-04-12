@@ -3,14 +3,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
-  FileText, FileUp, FilePlus, ScanLine, ShieldCheck, Layers, Pencil, Star, 
-  Check, FileSearch, Download, FileOutput, FileSpreadsheet, FileCog
+  FileText, FileUp, FilePlus, ScanLine, ShieldCheck, Layers, Pencil, 
+  Star, Check, FileSearch, Download, FileOutput, ChevronRight, 
+  FileSpreadsheet, FileCog, Users, Laptop, ArrowRight
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import AnimatedCard from '@/components/animation/AnimatedCard';
 import { motion } from 'framer-motion';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
+import { Card, CardContent } from '@/components/ui/card';
 
 // Tool category interface
 interface ToolCategory {
@@ -216,68 +218,95 @@ const Index = () => {
       
       <Navbar />
       
-      {/* Hero Section with Animated Gradient */}
-      <section className="relative overflow-hidden py-24 md:py-32">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-accent/30 to-primary/20 animate-gradient"></div>
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjItMS44LTQtNC00cy00IDEuOC00IDQgMS44IDQgNCA0IDQtMS44IDQtNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-10"></div>
+      {/* Hero Section with Modern Design */}
+      <section className="relative overflow-hidden py-20 md:py-28 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800">
+        <div className="absolute inset-0 bg-grid-pattern opacity-[0.2] dark:opacity-[0.1]"></div>
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-purple-500 to-pink-500"></div>
         
-        <div className="container relative mx-auto px-4 text-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="mb-6"
-          >
-            <h1 className="font-display text-4xl font-bold tracking-tight text-foreground md:text-6xl lg:text-7xl">
-              All Your <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">PDF Tools</span> in One Place
-            </h1>
-          </motion.div>
-          
-          <motion.p 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="mx-auto mb-8 max-w-3xl text-xl text-muted-foreground md:text-2xl"
-          >
-            Edit, convert, compress, e-sign PDFs and much more with our all-in-one PDF toolkit. Free, secure, and works on any device.
-          </motion.p>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="flex flex-wrap justify-center gap-4"
-          >
-            <Button size="lg" className="gradient-button" asChild>
-              <Link to="/tools">Get Started - It's Free</Link>
-            </Button>
-            <Button size="lg" variant="outline" className="border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5" asChild>
-              <Link to="/signup">Create Free Account</Link>
-            </Button>
-          </motion.div>
+        <div className="container relative mx-auto px-4 z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7 }}
+              className="text-center lg:text-left"
+            >
+              <span className="inline-block px-4 py-1.5 mb-6 text-sm font-medium rounded-full bg-primary/10 text-primary dark:bg-primary/20">
+                All-in-one PDF Solution
+              </span>
+              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6">
+                Make Your PDFs <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent animate-gradient">Work For You</span>
+              </h1>
+              
+              <p className="text-xl text-muted-foreground mb-8 max-w-lg mx-auto lg:mx-0">
+                Transform, convert, edit and optimize your PDFs with our powerful yet simple tools. No software to install, 100% online.
+              </p>
+              
+              <div className="flex flex-wrap justify-center lg:justify-start gap-4">
+                <Button size="lg" className="bg-gradient-to-r from-primary to-purple-500 hover:opacity-90 font-medium" asChild>
+                  <Link to="/tools">
+                    Get Started - Free <ArrowRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" className="border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5" asChild>
+                  <Link to="/signup">Create Account</Link>
+                </Button>
+              </div>
+              
+              <div className="mt-6 lg:mt-8 flex items-center text-muted-foreground justify-center lg:justify-start">
+                <Check className="h-5 w-5 text-green-500 mr-2" />
+                <span className="text-sm">No registration required for basic tools</span>
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="hidden lg:block relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-purple-500/20 rounded-2xl transform rotate-6"></div>
+              <img 
+                src="/placeholder.svg" 
+                alt="AquaPDF Dashboard" 
+                className="rounded-xl shadow-2xl relative z-10 border border-slate-200 dark:border-slate-700"
+              />
+              
+              <div className="absolute -bottom-6 -left-6 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-lg flex items-center gap-3 animate-float">
+                <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
+                  <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <span className="font-medium">PDF processed successfully</span>
+              </div>
+            </motion.div>
+          </div>
           
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 0.8 }}
-            className="mt-12 text-center text-muted-foreground"
+            className="mt-16 text-center"
           >
-            <p className="mb-2 font-medium">Trusted by thousands of users</p>
+            <p className="mb-4 font-medium">Trusted by thousands worldwide</p>
             <div className="flex flex-wrap items-center justify-center gap-8">
-              <div className="opacity-70 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
-                <Star className="h-5 w-5 inline mr-1 text-yellow-500" />
-                <Star className="h-5 w-5 inline mr-1 text-yellow-500" />
-                <Star className="h-5 w-5 inline mr-1 text-yellow-500" />
-                <Star className="h-5 w-5 inline mr-1 text-yellow-500" />
-                <Star className="h-5 w-5 inline text-yellow-500" />
-                <span className="ml-2 text-sm font-medium">4.8/5 (2000+ reviews)</span>
+              <div className="opacity-80 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
+                <div className="flex items-center">
+                  <Star className="h-5 w-5 text-yellow-500" fill="currentColor" />
+                  <Star className="h-5 w-5 text-yellow-500" fill="currentColor" />
+                  <Star className="h-5 w-5 text-yellow-500" fill="currentColor" />
+                  <Star className="h-5 w-5 text-yellow-500" fill="currentColor" />
+                  <Star className="h-5 w-5 text-yellow-500" fill="currentColor" />
+                  <span className="ml-2 text-sm font-medium">4.8/5 (2000+ reviews)</span>
+                </div>
               </div>
               <div className="h-6 w-px bg-border"></div>
-              <div className="opacity-70 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
+              <div className="opacity-80 hover:opacity-100 transition-all flex items-center">
+                <ShieldCheck className="h-5 w-5 mr-2 text-primary" />
                 <span className="text-sm font-medium">100% Secure & Private</span>
               </div>
               <div className="h-6 w-px bg-border"></div>
-              <div className="opacity-70 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
+              <div className="opacity-80 hover:opacity-100 transition-all flex items-center">
+                <Users className="h-5 w-5 mr-2 text-primary" />
                 <span className="text-sm font-medium">5M+ Monthly Users</span>
               </div>
             </div>
@@ -285,21 +314,26 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Featured Tools Section */}
+      {/* Feature Preview Section */}
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">Most Popular PDF Tools</h2>
-          <p className="text-muted-foreground text-center mb-12 max-w-3xl mx-auto">
-            Choose from our most popular tools to handle your PDF needs in seconds.
-            No installation, no registration required.
-          </p>
+          <div className="text-center mb-12">
+            <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary mb-3">
+              Popular Tools
+            </span>
+            <h2 className="text-3xl font-bold mb-3">Everything You Need for PDFs</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Choose from our collection of powerful tools to handle all your PDF needs in seconds.
+              No installation, no registration required.
+            </p>
+          </div>
           
           <motion.div 
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-50px" }}
           >
             {featuredTools.map((toolId, index) => {
               const tool = findToolById(toolId);
@@ -309,18 +343,26 @@ const Index = () => {
                 <motion.div 
                   key={tool.id}
                   variants={itemVariants}
+                  className="group"
                 >
-                  <AnimatedCard className="h-full p-6 hover:border-primary/40 transition-all" delay={index * 0.1}>
+                  <AnimatedCard 
+                    className="h-full p-6 hover:shadow-lg transition-all hover:border-primary/40 relative overflow-hidden" 
+                    delay={index * 0.1}
+                  >
                     <Link 
                       to={`/tools/${toolId}`}
-                      className="flex flex-col items-center h-full"
+                      className="flex flex-col h-full"
                     >
-                      <div className="bg-primary/10 p-3 rounded-full mb-4">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 z-0"></div>
+                      <div className="bg-primary/10 p-3 rounded-full mb-4 w-14 h-14 flex items-center justify-center relative z-10">
                         <tool.icon className="h-7 w-7 text-primary" />
                       </div>
-                      <h3 className="text-xl font-medium mb-2">{tool.name}</h3>
-                      <p className="text-muted-foreground text-center mb-4">{tool.description}</p>
-                      <p className="text-sm text-primary mt-auto">Try it now →</p>
+                      <h3 className="text-xl font-bold mb-2">{tool.name}</h3>
+                      <p className="text-muted-foreground mb-4 flex-grow">{tool.description}</p>
+                      <div className="flex items-center text-primary mt-auto font-medium">
+                        <span>Try it now</span>
+                        <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
+                      </div>
                     </Link>
                   </AnimatedCard>
                 </motion.div>
@@ -329,57 +371,80 @@ const Index = () => {
           </motion.div>
           
           <div className="text-center mt-10">
-            <Button asChild>
+            <Button size="lg" asChild className="bg-gradient-to-r from-primary to-purple-500 hover:opacity-90">
               <Link to="/tools">View All PDF Tools</Link>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* SEO Taglines Section */}
-      <section className="py-16 bg-muted/30">
+      {/* How It Works Section */}
+      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">What Can You Do With AquaPDF?</h2>
-          <p className="text-muted-foreground text-center mb-12 max-w-3xl mx-auto">
-            Everything you need to work with PDF files in one place
-          </p>
+          <div className="text-center mb-16">
+            <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary mb-3">
+              Simple & Fast
+            </span>
+            <h2 className="text-3xl font-bold mb-3">How AquaPDF Works</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Get your PDF tasks done in three simple steps - no technical knowledge required.
+            </p>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {categories.flatMap(category => 
-              category.tools.slice(0, 2).map(tool => (
-                <Link 
-                  key={tool.id}
-                  to={`/tools/${tool.id}`}
-                  className="flex items-start gap-4 p-4 rounded-lg hover:bg-background transition-colors"
-                >
-                  <div className="bg-primary/10 p-2 rounded-md mt-1">
-                    <tool.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium mb-1">{tool.name}</h3>
-                    <p className="text-muted-foreground text-sm">{tool.tagline}</p>
-                  </div>
-                </Link>
-              ))
-            ).slice(0, 10)}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="border-0 shadow-lg bg-white dark:bg-slate-800 overflow-hidden">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 mb-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-lg font-bold">1</div>
+                <h3 className="text-xl font-bold mb-3">Upload Your Files</h3>
+                <p className="text-muted-foreground">
+                  Simply drag & drop your PDF files into our secure platform. Your files stay private and are automatically deleted after processing.
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-0 shadow-lg bg-white dark:bg-slate-800 overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-purple-500"></div>
+              <CardContent className="p-6">
+                <div className="w-12 h-12 mb-5 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 text-lg font-bold">2</div>
+                <h3 className="text-xl font-bold mb-3">Select Your Tool</h3>
+                <p className="text-muted-foreground">
+                  Choose from our wide range of professional PDF tools. Convert, compress, edit, merge, split or perform OCR with a single click.
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-0 shadow-lg bg-white dark:bg-slate-800 overflow-hidden">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 mb-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 text-lg font-bold">3</div>
+                <h3 className="text-xl font-bold mb-3">Download Result</h3>
+                <p className="text-muted-foreground">
+                  Get your processed PDF instantly. Our powerful cloud-based processing ensures high-quality results every time.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
       {/* Categories Overview */}
-      <section className="py-16 bg-background">
+      <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">Explore All PDF Tools</h2>
-          <p className="text-muted-foreground text-center mb-12 max-w-3xl mx-auto">
-            Find the right tool for any PDF task, organized by category
-          </p>
+          <div className="text-center mb-16">
+            <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary mb-3">
+              Comprehensive
+            </span>
+            <h2 className="text-3xl font-bold mb-3">Explore PDF Tools by Category</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Find the right tool for any PDF task, organized by category for easy access
+            </p>
+          </div>
           
           <motion.div 
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-50px" }}
           >
             {categories.map((category, index) => (
               <motion.div
@@ -387,32 +452,38 @@ const Index = () => {
                 variants={itemVariants}
                 className="group"
               >
-                <AnimatedCard className="h-full transition-all duration-300 group-hover:border-primary/40" delay={index * 0.1}>
+                <AnimatedCard className="h-full transition-all duration-300 group-hover:border-primary/40 hover:shadow-lg" delay={index * 0.1}>
                   <div className="p-6">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-primary/10 p-2 rounded-md">
+                      <div className="bg-primary/10 p-2.5 rounded-lg">
                         <category.icon className="h-6 w-6 text-primary" />
                       </div>
-                      <h3 className="text-xl font-medium">{category.title}</h3>
+                      <h3 className="text-xl font-bold">{category.title}</h3>
                     </div>
-                    <p className="text-muted-foreground mb-4">{category.description}</p>
-                    <ul className="space-y-2">
-                      {category.tools.map(tool => (
+                    <p className="text-muted-foreground mb-5">{category.description}</p>
+                    <ul className="space-y-3 mb-5">
+                      {category.tools.slice(0, 3).map(tool => (
                         <li key={tool.id}>
                           <Link 
                             to={`/tools/${tool.id}`}
                             className="flex items-center text-sm hover:text-primary transition-colors"
                           >
-                            <tool.icon className="h-4 w-4 mr-2" />
+                            <tool.icon className="h-4 w-4 mr-2 text-muted-foreground" />
                             {tool.name}
                           </Link>
                         </li>
                       ))}
+                      {category.tools.length > 3 && (
+                        <li className="text-sm text-muted-foreground">
+                          +{category.tools.length - 3} more tools
+                        </li>
+                      )}
                     </ul>
-                    <div className="mt-4 pt-4 border-t">
-                      <Button variant="ghost" size="sm" asChild className="w-full group-hover:text-primary">
-                        <Link to={`/tools#${category.id}`}>
+                    <div className="pt-4 border-t border-border">
+                      <Button variant="ghost" size="sm" asChild className="w-full text-primary hover:bg-primary/5 font-medium">
+                        <Link to={`/tools#${category.id}`} className="flex items-center justify-center">
                           View All {category.title} Tools
+                          <ChevronRight className="h-4 w-4 ml-1 transition-transform group-hover:translate-x-1" />
                         </Link>
                       </Button>
                     </div>
@@ -425,114 +496,151 @@ const Index = () => {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="py-16 bg-muted/30">
+      <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">Why Choose AquaPDF</h2>
-          <p className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
-            Our toolkit is designed to make working with PDFs simple, efficient, and accessible to everyone.
-          </p>
+          <div className="text-center mb-16">
+            <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary mb-3">
+              Why AquaPDF
+            </span>
+            <h2 className="text-3xl font-bold mb-3">The AquaPDF Advantage</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Our toolkit is designed to make working with PDFs simple, efficient, and accessible to everyone.
+            </p>
+          </div>
           
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-          >
-            <motion.div variants={itemVariants} className="flex flex-col items-center text-center p-6">
-              <div className="bg-primary/10 p-4 rounded-full mb-4">
-                <ShieldCheck className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-medium mb-2">Secure & Private</h3>
-              <p className="text-muted-foreground">
-                Your files are processed securely in your browser and automatically deleted after processing.
-              </p>
-            </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="border border-border/50 bg-white/50 backdrop-blur-sm dark:bg-slate-800/50 hover:shadow-lg transition-all">
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className="bg-primary/10 p-4 rounded-full mb-4 w-16 h-16 flex items-center justify-center">
+                  <ShieldCheck className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">Secure & Private</h3>
+                <p className="text-muted-foreground">
+                  Files processed securely in your browser and automatically deleted after processing. We never see your data.
+                </p>
+              </CardContent>
+            </Card>
             
-            <motion.div variants={itemVariants} className="flex flex-col items-center text-center p-6">
-              <div className="bg-primary/10 p-4 rounded-full mb-4">
-                <FileText className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-medium mb-2">Wide Format Support</h3>
-              <p className="text-muted-foreground">
-                Convert between PDF and popular formats like Word, Excel, PowerPoint, and images with perfect formatting.
-              </p>
-            </motion.div>
+            <Card className="border border-border/50 bg-white/50 backdrop-blur-sm dark:bg-slate-800/50 hover:shadow-lg transition-all">
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className="bg-primary/10 p-4 rounded-full mb-4 w-16 h-16 flex items-center justify-center">
+                  <FileText className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">Perfect Format Support</h3>
+                <p className="text-muted-foreground">
+                  Convert between PDF and popular formats like Word, Excel, PowerPoint, and images while maintaining precise formatting.
+                </p>
+              </CardContent>
+            </Card>
             
-            <motion.div variants={itemVariants} className="flex flex-col items-center text-center p-6">
-              <div className="bg-primary/10 p-4 rounded-full mb-4">
-                <Download className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-medium mb-2">Free to Use</h3>
-              <p className="text-muted-foreground">
-                Start using our basic tools for free with no registration. Premium features available for power users.
-              </p>
-            </motion.div>
-          </motion.div>
+            <Card className="border border-border/50 bg-white/50 backdrop-blur-sm dark:bg-slate-800/50 hover:shadow-lg transition-all">
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className="bg-primary/10 p-4 rounded-full mb-4 w-16 h-16 flex items-center justify-center">
+                  <Laptop className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">Works Everywhere</h3>
+                <p className="text-muted-foreground">
+                  Use our tools on any device - desktop, tablet, or mobile. No software to install, just a browser is all you need.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-16 bg-background">
+      <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-4">What Our Users Say</h2>
-          <p className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
-            Join thousands of satisfied users who trust AquaPDF for their document needs
-          </p>
+          <div className="text-center mb-16">
+            <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary mb-3">
+              Testimonials
+            </span>
+            <h2 className="text-3xl font-bold mb-3">What Our Users Say</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Join thousands of satisfied users who trust AquaPDF for their document needs
+            </p>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <AnimatedCard className="p-6">
+            <AnimatedCard className="p-6 border border-border/50 bg-white/50 backdrop-blur-sm dark:bg-slate-800/50 hover:shadow-lg transition-all">
               <div className="flex mb-4">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star key={star} className="h-5 w-5 text-yellow-500" fill="currentColor" />
                 ))}
               </div>
-              <p className="mb-4">"AquaPDF saved me so much time converting my bank statements to Excel. The OCR feature is incredibly accurate!"</p>
-              <p className="font-medium">Sarah T.</p>
-              <p className="text-sm text-muted-foreground">Financial Analyst</p>
+              <p className="mb-4 italic">"AquaPDF saved me so much time converting my bank statements to Excel. The OCR feature is incredibly accurate and maintained all my data!"</p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                  ST
+                </div>
+                <div className="ml-3">
+                  <p className="font-medium">Sarah T.</p>
+                  <p className="text-sm text-muted-foreground">Financial Analyst</p>
+                </div>
+              </div>
             </AnimatedCard>
             
-            <AnimatedCard className="p-6" delay={0.1}>
+            <AnimatedCard className="p-6 border border-primary/20 bg-white/50 backdrop-blur-sm dark:bg-slate-800/50 hover:shadow-lg transition-all" delay={0.1}>
               <div className="flex mb-4">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star key={star} className="h-5 w-5 text-yellow-500" fill="currentColor" />
                 ))}
               </div>
-              <p className="mb-4">"The form filling and e-signature tools are perfect for my business. No more printing and scanning documents!"</p>
-              <p className="font-medium">Mark R.</p>
-              <p className="text-sm text-muted-foreground">Small Business Owner</p>
+              <p className="mb-4 italic">"The form filling tools are perfect for my business. No more printing and scanning documents! Everything is digital and professional."</p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                  MR
+                </div>
+                <div className="ml-3">
+                  <p className="font-medium">Mark R.</p>
+                  <p className="text-sm text-muted-foreground">Small Business Owner</p>
+                </div>
+              </div>
             </AnimatedCard>
             
-            <AnimatedCard className="p-6" delay={0.2}>
+            <AnimatedCard className="p-6 border border-border/50 bg-white/50 backdrop-blur-sm dark:bg-slate-800/50 hover:shadow-lg transition-all" delay={0.2}>
               <div className="flex mb-4">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star key={star} className="h-5 w-5 text-yellow-500" fill="currentColor" />
                 ))}
               </div>
-              <p className="mb-4">"I use the PDF merger daily for my research papers. It's incredibly fast and maintains all the formatting perfectly."</p>
-              <p className="font-medium">Dr. Lisa M.</p>
-              <p className="text-sm text-muted-foreground">University Professor</p>
+              <p className="mb-4 italic">"I use the PDF merger daily for my research papers. It's incredibly fast and maintains all the formatting perfectly. A must-have tool!"</p>
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                  LM
+                </div>
+                <div className="ml-3">
+                  <p className="font-medium">Dr. Lisa M.</p>
+                  <p className="text-sm text-muted-foreground">University Professor</p>
+                </div>
+              </div>
             </AnimatedCard>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent opacity-90"></div>
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjItMS44LTQtNC00cy00IDEuOC00IDQgMS44IDQgNCA0IDQtMS44IDQtNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-10"></div>
-        <div className="container relative mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4 text-white">Start Working with Your PDFs Now</h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto text-white/90">
-            No registration required — just upload your files and get started!
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button size="lg" className="bg-white text-primary hover:bg-white/90" asChild>
-              <Link to="/tools">Get Started for Free</Link>
-            </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10" asChild>
-              <Link to="/signup">Create an Account</Link>
-            </Button>
+      <section className="relative py-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-purple-500/90"></div>
+        <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+        <div className="container relative mx-auto px-4 z-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">Ready to Transform Your PDF Workflow?</h2>
+            <p className="text-xl mb-8 text-white/90 max-w-xl mx-auto">
+              Join millions of users who save time with AquaPDF. Start using our tools for free today!
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-medium" asChild>
+                <Link to="/tools">
+                  Get Started Now
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 border-2" asChild>
+                <Link to="/signup">Create Free Account</Link>
+              </Button>
+            </div>
+            <p className="mt-6 text-white/80 text-sm">No credit card required. Cancel anytime.</p>
           </div>
         </div>
       </section>
