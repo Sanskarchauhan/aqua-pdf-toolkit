@@ -59,6 +59,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
+      console.log("Login attempt with:", values.email); // Debug log
       const success = await login(values.email, values.password);
       
       if (success) {
@@ -77,12 +78,12 @@ const Login = () => {
         });
       }
     } catch (error) {
+      console.error("Login error details:", error); // Enhanced error logging
       toast({
         title: "Login error",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-      console.error('Login error:', error);
     } finally {
       setIsLoading(false);
     }

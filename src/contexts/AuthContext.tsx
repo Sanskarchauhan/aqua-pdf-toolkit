@@ -41,6 +41,7 @@ const AuthContext = createContext<AuthContextType>({
 const API_ENDPOINTS = {
   LOGIN: '/api/login.php',
   SIGNUP: '/api/signup.php',
+  LOGOUT: '/api/logout.php',
   UPDATE_TRIAL: '/api/update_trial.php',
   UPGRADE: '/api/upgrade.php',
 };
@@ -370,10 +371,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Logout function
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem(AUTH_USER_KEY);
+  const logout = async () => {
+    try {
+      // Clear local state regardless of API call success
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem(AUTH_USER_KEY);
+      
+      // For production - call the logout API
+      if (process.env.NODE_ENV !== 'development') {
+        await fetch(API_ENDPOINTS.LOGOUT, {
+          method: 'POST',
+          credentials: 'include', // Include cookies for session management
+        });
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local state even if API call fails
+    }
   };
 
   const value = {

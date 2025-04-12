@@ -1,43 +1,32 @@
 
 <?php
-// Database configuration for Hostinger
-$host = 'localhost'; // Usually localhost on Hostinger
-$db_name = 'your_database_name'; // Your Hostinger database name
-$username = 'your_database_username'; // Your Hostinger database username
-$password = 'your_database_password'; // Your Hostinger database password
+// Database configuration
+$host = "localhost";
+$dbname = "your_database_name"; // Update with your actual database name
+$username = "your_database_username"; // Update with your actual database username
+$password = "your_database_password"; // Update with your actual database password
 
-// Create database connection
-$conn = new mysqli($host, $username, $password, $db_name);
+// Create connection
+$conn = new mysqli($host, $username, $password, $dbname);
 
 // Check connection
 if ($conn->connect_error) {
-    header('HTTP/1.1 500 Internal Server Error');
-    echo json_encode(['error' => 'Database connection failed']);
-    exit;
+    die("Connection failed: " . $conn->connect_error);
 }
-
-// Enable error reporting for development
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-// Set headers for JSON responses
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); // In production, specify your domain
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Credentials: true');
 
 // Start session
 session_start();
 
-// Helper functions
+// Function to sanitize input
 function sanitize_input($data) {
+    global $conn;
     $data = trim($data);
     $data = stripslashes($data);
     $data = htmlspecialchars($data);
-    return $data;
+    return $conn->real_escape_string($data);
 }
 
+// Function to generate UUID
 function generate_uuid() {
     return sprintf(
         '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
