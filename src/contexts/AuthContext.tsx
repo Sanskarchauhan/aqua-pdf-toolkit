@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 
 // User type definition
@@ -25,11 +24,6 @@ interface AuthContextType {
   hasAvailableTrials: boolean;
 }
 
-// Mock database of users (in a real app, this would be stored in a database)
-const USERS_STORAGE_KEY = 'aquapdf_users';
-const AUTH_USER_KEY = 'aquapdf_current_user';
-const MAX_FREE_TRIALS = 3;
-
 // Create the context with a default value
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
@@ -43,8 +37,20 @@ const AuthContext = createContext<AuthContextType>({
   hasAvailableTrials: false,
 });
 
+// Define API endpoints - update these with your actual Hostinger PHP endpoints
+const API_ENDPOINTS = {
+  LOGIN: '/api/login.php',
+  SIGNUP: '/api/signup.php',
+  UPDATE_TRIAL: '/api/update_trial.php',
+  UPGRADE: '/api/upgrade.php',
+};
+
 // Custom hook to use the auth context
 export const useAuth = () => useContext(AuthContext);
+
+// Storage keys
+const AUTH_USER_KEY = 'aquapdf_current_user';
+const MAX_FREE_TRIALS = 3;
 
 // Auth provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -67,115 +73,230 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  // Helper to get users from localStorage
-  const getUsers = (): Record<string, User & { password: string }> => {
-    const users = localStorage.getItem(USERS_STORAGE_KEY);
-    return users ? JSON.parse(users) : {};
-  };
+  // Function to make API calls
+  const callApi = async (endpoint: string, data: any) => {
+    try {
+      // In development, we'll use localStorage as a fallback
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Development mode: Using localStorage instead of API call');
+        return null;
+      }
 
-  // Helper to save users to localStorage
-  const saveUsers = (users: Record<string, User & { password: string }>) => {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+        credentials: 'include', // Send cookies for session management
+      });
+      
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('API error:', error);
+      return null;
+    }
   };
 
   // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    // In a real app, this would be an API call
-    const users = getUsers();
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (users[email] && users[email].password === password) {
-      const currentUser = {
-        id: users[email].id,
-        name: users[email].name,
-        email: users[email].email,
-        isSubscribed: users[email].isSubscribed || false,
-        trialCount: users[email].trialCount || 0,
-      };
+    try {
+      // For development - use localStorage implementation
+      if (process.env.NODE_ENV === 'development') {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Get users from localStorage
+        const users = JSON.parse(localStorage.getItem('aquapdf_users') || '{}');
+        
+        if (users[email] && users[email].password === password) {
+          const currentUser = {
+            id: users[email].id,
+            name: users[email].name,
+            email: users[email].email,
+            isSubscribed: users[email].isSubscribed || false,
+            trialCount: users[email].trialCount || 0,
+          };
+          
+          setUser(currentUser);
+          setIsAuthenticated(true);
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentUser));
+          setIsLoading(false);
+          return true;
+        }
+        
+        setIsLoading(false);
+        return false;
+      }
       
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentUser));
+      // For production - use PHP API
+      const result = await callApi(API_ENDPOINTS.LOGIN, { email, password });
+      
+      if (result && result.success) {
+        const currentUser = {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+          isSubscribed: result.user.isSubscribed || false,
+          trialCount: result.user.trialCount || 0,
+        };
+        
+        setUser(currentUser);
+        setIsAuthenticated(true);
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentUser));
+        setIsLoading(false);
+        return true;
+      }
+      
       setIsLoading(false);
-      return true;
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      setIsLoading(false);
+      return false;
     }
-    
-    setIsLoading(false);
-    return false;
   };
 
   // Signup function
   const signup = async (name: string, email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    // In a real app, this would be an API call
-    const users = getUsers();
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check if user already exists
-    if (users[email]) {
+    try {
+      // For development - use localStorage implementation
+      if (process.env.NODE_ENV === 'development') {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Get users from localStorage
+        const users = JSON.parse(localStorage.getItem('aquapdf_users') || '{}');
+        
+        // Check if user already exists
+        if (users[email]) {
+          setIsLoading(false);
+          return false;
+        }
+        
+        // Create new user
+        const newUser = {
+          id: crypto.randomUUID(),
+          name,
+          email,
+          password, // In real app this would be hashed
+          isSubscribed: false,
+          trialCount: 0,
+        };
+        
+        users[email] = newUser;
+        localStorage.setItem('aquapdf_users', JSON.stringify(users));
+        
+        // Auto login after signup
+        const currentUser = {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          isSubscribed: newUser.isSubscribed,
+          trialCount: newUser.trialCount,
+        };
+        
+        setUser(currentUser);
+        setIsAuthenticated(true);
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentUser));
+        setIsLoading(false);
+        
+        return true;
+      }
+      
+      // For production - use PHP API
+      const result = await callApi(API_ENDPOINTS.SIGNUP, { name, email, password });
+      
+      if (result && result.success) {
+        const currentUser = {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+          isSubscribed: result.user.isSubscribed || false,
+          trialCount: result.user.trialCount || 0,
+        };
+        
+        setUser(currentUser);
+        setIsAuthenticated(true);
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentUser));
+        setIsLoading(false);
+        return true;
+      }
+      
+      setIsLoading(false);
+      return false;
+    } catch (error) {
+      console.error('Signup error:', error);
       setIsLoading(false);
       return false;
     }
-    
-    // Create new user
-    const newUser = {
-      id: crypto.randomUUID(),
-      name,
-      email,
-      password,
-      isSubscribed: false,
-      trialCount: 0,
-    };
-    
-    users[email] = newUser;
-    saveUsers(users);
-    
-    // Auto login after signup
-    const currentUser = {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      isSubscribed: newUser.isSubscribed,
-      trialCount: newUser.trialCount,
-    };
-    
-    setUser(currentUser);
-    setIsAuthenticated(true);
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentUser));
-    setIsLoading(false);
-    
-    return true;
   };
 
   // Increase trial count function
-  const increaseTrialCount = () => {
+  const increaseTrialCount = async () => {
     if (!user) return;
     
-    const users = getUsers();
-    const updatedUser = users[user.email];
-    
-    if (updatedUser) {
-      // Only increase if not subscribed
-      if (!updatedUser.isSubscribed) {
-        updatedUser.trialCount = (updatedUser.trialCount || 0) + 1;
-        users[user.email] = updatedUser;
-        saveUsers(users);
+    try {
+      // For development - use localStorage implementation
+      if (process.env.NODE_ENV === 'development') {
+        const users = JSON.parse(localStorage.getItem('aquapdf_users') || '{}');
+        const updatedUser = users[user.email];
         
+        if (updatedUser) {
+          // Only increase if not subscribed
+          if (!updatedUser.isSubscribed) {
+            updatedUser.trialCount = (updatedUser.trialCount || 0) + 1;
+            users[user.email] = updatedUser;
+            localStorage.setItem('aquapdf_users', JSON.stringify(users));
+            
+            // Update local user state
+            const newUserState = {
+              ...user,
+              trialCount: updatedUser.trialCount
+            };
+            
+            setUser(newUserState);
+            localStorage.setItem(AUTH_USER_KEY, JSON.stringify(newUserState));
+            
+            if (updatedUser.trialCount >= MAX_FREE_TRIALS) {
+              toast({
+                title: "Trial limit reached",
+                description: "You've reached the limit of free trials. Please upgrade to continue using all features.",
+                variant: "destructive",
+              });
+            } else {
+              toast({
+                title: "Trial usage",
+                description: `You have ${MAX_FREE_TRIALS - updatedUser.trialCount} free trials remaining.`,
+              });
+            }
+          }
+        }
+        return;
+      }
+      
+      // For production - use PHP API
+      const result = await callApi(API_ENDPOINTS.UPDATE_TRIAL, { userId: user.id });
+      
+      if (result && result.success) {
         // Update local user state
         const newUserState = {
           ...user,
-          trialCount: updatedUser.trialCount
+          trialCount: result.trialCount
         };
         
         setUser(newUserState);
         localStorage.setItem(AUTH_USER_KEY, JSON.stringify(newUserState));
         
-        if (updatedUser.trialCount >= MAX_FREE_TRIALS) {
+        if (result.trialCount >= MAX_FREE_TRIALS) {
           toast({
             title: "Trial limit reached",
             description: "You've reached the limit of free trials. Please upgrade to continue using all features.",
@@ -184,38 +305,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           toast({
             title: "Trial usage",
-            description: `You have ${MAX_FREE_TRIALS - updatedUser.trialCount} free trials remaining.`,
+            description: `You have ${MAX_FREE_TRIALS - result.trialCount} free trials remaining.`,
           });
         }
       }
+    } catch (error) {
+      console.error('Error updating trial count:', error);
     }
   };
 
   // Upgrade to subscription
-  const upgradeToSubscription = () => {
+  const upgradeToSubscription = async () => {
     if (!user) return;
     
-    const users = getUsers();
-    const updatedUser = users[user.email];
-    
-    if (updatedUser) {
-      updatedUser.isSubscribed = true;
-      users[user.email] = updatedUser;
-      saveUsers(users);
+    try {
+      // For development - use localStorage implementation
+      if (process.env.NODE_ENV === 'development') {
+        const users = JSON.parse(localStorage.getItem('aquapdf_users') || '{}');
+        const updatedUser = users[user.email];
+        
+        if (updatedUser) {
+          updatedUser.isSubscribed = true;
+          users[user.email] = updatedUser;
+          localStorage.setItem('aquapdf_users', JSON.stringify(users));
+          
+          // Update local user state
+          const newUserState = {
+            ...user,
+            isSubscribed: true
+          };
+          
+          setUser(newUserState);
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(newUserState));
+          
+          toast({
+            title: "Subscription activated",
+            description: "Thank you! You now have full access to all features.",
+          });
+        }
+        return;
+      }
       
-      // Update local user state
-      const newUserState = {
-        ...user,
-        isSubscribed: true
-      };
+      // For production - use PHP API
+      const result = await callApi(API_ENDPOINTS.UPGRADE, { userId: user.id });
       
-      setUser(newUserState);
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(newUserState));
-      
-      toast({
-        title: "Subscription activated",
-        description: "Thank you! You now have full access to all features.",
-      });
+      if (result && result.success) {
+        // Update local user state
+        const newUserState = {
+          ...user,
+          isSubscribed: true
+        };
+        
+        setUser(newUserState);
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(newUserState));
+        
+        toast({
+          title: "Subscription activated",
+          description: "Thank you! You now have full access to all features.",
+        });
+      }
+    } catch (error) {
+      console.error('Error upgrading subscription:', error);
     }
   };
 

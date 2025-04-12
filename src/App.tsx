@@ -16,6 +16,10 @@ import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import GetStarted from "./pages/GetStarted";
 import Pricing from "./pages/Pricing";
+import About from "./pages/About";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Contact from "./pages/Contact";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -92,6 +96,17 @@ const AnimatedRoutes = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/get-started" element={<GetStarted />} />
+          
+          {/* Footer Pages */}
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/help" element={<About />} /> {/* Placeholder, you can create a proper Help page later */}
+          <Route path="/blog" element={<About />} /> {/* Placeholder */}
+          <Route path="/tutorials" element={<About />} /> {/* Placeholder */}
+          <Route path="/api" element={<About />} /> {/* Placeholder */}
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </motion.div>

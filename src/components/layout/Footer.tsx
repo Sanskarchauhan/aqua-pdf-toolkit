@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FileIcon, Github, Twitter } from 'lucide-react';
+import { FileIcon, Github, Twitter, Mail } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -26,6 +26,9 @@ const Footer = () => {
             <a href="#" className="text-muted-foreground hover:text-foreground">
               <Github size={20} />
             </a>
+            <a href="mailto:chauhansankar555@gmail.com" className="text-muted-foreground hover:text-foreground">
+              <Mail size={20} />
+            </a>
           </div>
         </div>
         
@@ -42,27 +45,27 @@ const Footer = () => {
         <div>
           <h3 className="font-medium text-lg mb-3">Resources</h3>
           <ul className="space-y-2">
-            <li><a href="#" className="text-muted-foreground hover:text-foreground">Blog</a></li>
-            <li><a href="#" className="text-muted-foreground hover:text-foreground">Help Center</a></li>
-            <li><a href="#" className="text-muted-foreground hover:text-foreground">Tutorials</a></li>
-            <li><a href="#" className="text-muted-foreground hover:text-foreground">API</a></li>
+            <li><Link to="/blog" className="text-muted-foreground hover:text-foreground">Blog</Link></li>
+            <li><Link to="/help" className="text-muted-foreground hover:text-foreground">Help Center</Link></li>
+            <li><Link to="/tutorials" className="text-muted-foreground hover:text-foreground">Tutorials</Link></li>
+            <li><Link to="/api" className="text-muted-foreground hover:text-foreground">API</Link></li>
           </ul>
         </div>
         
         <div>
           <h3 className="font-medium text-lg mb-3">Company</h3>
           <ul className="space-y-2">
-            <li><a href="#" className="text-muted-foreground hover:text-foreground">About</a></li>
-            <li><a href="#" className="text-muted-foreground hover:text-foreground">Privacy</a></li>
-            <li><a href="#" className="text-muted-foreground hover:text-foreground">Terms</a></li>
-            <li><a href="#" className="text-muted-foreground hover:text-foreground">Contact</a></li>
+            <li><Link to="/about" className="text-muted-foreground hover:text-foreground">About</Link></li>
+            <li><Link to="/privacy" className="text-muted-foreground hover:text-foreground">Privacy</Link></li>
+            <li><Link to="/terms" className="text-muted-foreground hover:text-foreground">Terms</Link></li>
+            <li><Link to="/contact" className="text-muted-foreground hover:text-foreground">Contact</Link></li>
           </ul>
         </div>
       </div>
       
       <div className="container mt-8 pt-8 border-t">
         <p className="text-center text-muted-foreground text-sm">
-          © {currentYear} AquaPDF. All rights reserved.
+          © {currentYear} AquaPDF. All rights reserved. Application developed by Sanskar Chauhan.
         </p>
       </div>
     </footer>

@@ -1,73 +1,109 @@
-# Welcome to your Lovable project
 
-## Project info
+# AquaPDF - PDF Tools Web Application
 
-**URL**: https://lovable.dev/projects/33a6745f-0413-4c3c-883a-7c70319c1c85
+AquaPDF is an all-in-one PDF toolkit for editing, converting, compressing, and managing PDF documents online.
 
-## How can I edit this code?
+## Deployment Guide for Hostinger
 
-There are several ways of editing your application.
+### Prerequisites
 
-**Use Lovable**
+- A Hostinger web hosting account
+- MySQL database access
+- Domain name configured with Hostinger
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/33a6745f-0413-4c3c-883a-7c70319c1c85) and start prompting.
+### Step 1: Database Setup
 
-Changes made via Lovable will be committed automatically to this repo.
+1. Log in to your Hostinger control panel
+2. Navigate to **MySQL Databases** section
+3. Create a new database (note down the database name)
+4. Create a database user and assign all permissions to the database
+5. Make a note of the database credentials:
+   - Database Host (usually 'localhost')
+   - Database Name
+   - Username
+   - Password
 
-**Use your preferred IDE**
+### Step 2: Configure PHP Backend
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. Update the database configuration in `public/api/config.php` with your actual database credentials:
+   ```php
+   $host = 'localhost'; // Usually localhost on Hostinger
+   $db_name = 'your_database_name'; // Your actual database name
+   $username = 'your_database_username'; // Your actual database username
+   $password = 'your_database_password'; // Your actual password
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+2. Upload all PHP files from the `public/api` directory to your Hostinger account's `public_html/api` directory.
 
-Follow these steps:
+3. Run the database setup script by navigating to:
+   ```
+   https://yourdomain.com/api/setup_db.php
+   ```
+   This will create the necessary database tables.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Step 3: Build and Upload Frontend
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. Build the React application for production:
+   ```bash
+   npm run build
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. Upload all files from the `build` or `dist` directory to your Hostinger account's `public_html` directory.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Step 4: Configure .htaccess
+
+Create an `.htaccess` file in your `public_html` directory with the following content:
+
+```
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+</IfModule>
 ```
 
-**Edit a file directly in GitHub**
+This ensures that React Router works correctly for direct URL access.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Step 5: Test Your Application
 
-**Use GitHub Codespaces**
+1. Visit your domain to make sure the application loads correctly
+2. Test the signup and login functionality
+3. Make sure PDF tools work as expected
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Troubleshooting
 
-## What technologies are used for this project?
+- If you encounter "Access denied" errors in PHP, check your database credentials
+- For "500 Internal Server Error" responses, check your PHP error logs
+- For React routing issues, verify the .htaccess file is correctly uploaded
 
-This project is built with:
+## Security Recommendations
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. Keep your PHP and database credentials secure
+2. Use HTTPS for your domain (Hostinger provides free SSL certificates)
+3. Regularly update your application dependencies
+4. Implement rate limiting for API endpoints
+5. Set up database backups
 
-## How can I deploy this project?
+## Performance Optimizations
 
-Simply open [Lovable](https://lovable.dev/projects/33a6745f-0413-4c3c-883a-7c70319c1c85) and click on Share -> Publish.
+1. Enable gzip compression in Hostinger
+2. Configure browser caching
+3. Optimize images and assets
+4. Consider setting up a CDN for faster content delivery
 
-## Can I connect a custom domain to my Lovable project?
+## Project Structure
 
-Yes it is!
+- `/src` - React frontend source code
+- `/public/api` - PHP backend files
+- `/build` or `/dist` - Compiled production files (after building)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Contact
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+For questions or support, contact:
+- Email: chauhansankar555@gmail.com
+
+Developed by Sanskar Chauhan
