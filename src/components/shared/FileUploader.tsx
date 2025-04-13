@@ -1,206 +1,134 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Button } from '@/components/ui/button';
-import { FileIcon, UploadCloud, X, FileText, Image, File } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { FileUp, FilePlus, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-type FileUploaderProps = {
-  onFileSelect: (file: File) => void;
-  acceptedFileTypes?: Record<string, string[]> | string[];
-  maxFileSizeMB?: number;
+export interface FileUploaderProps {
+  accept: Record<string, string[]>;
+  maxFiles?: number;
+  maxSize?: number;
   className?: string;
-};
-
-const getIconForFile = (file: File) => {
-  if (file.type.includes('pdf')) {
-    return <FileText className="mr-2 h-4 w-4 text-red-500" />;
-  } else if (file.type.includes('image')) {
-    return <Image className="mr-2 h-4 w-4 text-blue-500" />;
-  } else if (file.type.includes('word')) {
-    return <FileText className="mr-2 h-4 w-4 text-blue-700" />;
-  } else if (file.type.includes('excel') || file.type.includes('sheet')) {
-    return <FileText className="mr-2 h-4 w-4 text-green-600" />;
-  } else if (file.type.includes('presentation')) {
-    return <FileText className="mr-2 h-4 w-4 text-orange-500" />;
-  } else {
-    return <File className="mr-2 h-4 w-4 text-gray-500" />;
-  }
-};
+  onFilesAdded: (files: File[]) => void;
+}
 
 const FileUploader: React.FC<FileUploaderProps> = ({
-  onFileSelect,
-  acceptedFileTypes = {
-    'application/pdf': ['.pdf'],
-  },
-  maxFileSizeMB = 10,
+  accept,
+  maxFiles = 1,
+  maxSize = 10 * 1024 * 1024, // 10MB default
   className,
+  onFilesAdded,
 }) => {
-  const { toast } = useToast();
   const [files, setFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [previews, setPreviews] = useState<{ file: File; preview: string }[]>([]);
-  
-  useEffect(() => {
-    // Generate previews for image files
-    const newPreviews = files.filter(file => file.type.includes('image')).map(file => ({
-      file,
-      preview: URL.createObjectURL(file)
-    }));
-    
-    setPreviews(newPreviews);
-    
-    // Clean up URLs when component unmounts
-    return () => {
-      previews.forEach(preview => URL.revokeObjectURL(preview.preview));
-    };
-  }, [files]);
-  
+  const { toast } = useToast();
+
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
     if (fileRejections.length > 0) {
-      fileRejections.forEach((rejection) => {
-        const { file, errors } = rejection;
-        if (errors[0]?.code === 'file-too-large') {
-          toast({
-            title: "File too large",
-            description: `${file.name} exceeds the ${maxFileSizeMB}MB limit.`,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Invalid file",
-            description: `${file.name} is not a valid file format.`,
-            variant: "destructive",
-          });
+      const errors = fileRejections.map(rejection => {
+        if (rejection.errors[0].code === 'file-too-large') {
+          return `"${rejection.file.name}" is too large.`;
+        } else if (rejection.errors[0].code === 'file-invalid-type') {
+          return `"${rejection.file.name}" has an unsupported file type.`;
         }
+        return `"${rejection.file.name}" - ${rejection.errors[0].message}`;
+      });
+
+      toast({
+        title: "File Upload Error",
+        description: errors.join(' '),
+        variant: "destructive",
       });
       return;
     }
-    
-    // We only care about the first file since we're selecting one file at a time
-    if (acceptedFiles.length > 0) {
-      const selectedFile = acceptedFiles[0];
-      
-      // Simulate upload progress
-      setUploading(true);
-      setProgress(0);
-      
-      const interval = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = prev + 10;
-          if (newProgress >= 100) {
-            clearInterval(interval);
-            setUploading(false);
-            
-            // Use setTimeout to avoid React state updates during render
-            setTimeout(() => {
-              setFiles([selectedFile]);
-              onFileSelect(selectedFile);
-            }, 0);
-            
-            return 100;
-          }
-          return newProgress;
-        });
-      }, 200);
+
+    if (files.length + acceptedFiles.length > maxFiles) {
+      toast({
+        title: "Too many files",
+        description: `Maximum ${maxFiles} ${maxFiles === 1 ? 'file is' : 'files are'} allowed.`,
+        variant: "destructive",
+      });
+      return;
     }
-  }, [maxFileSizeMB, onFileSelect, toast]);
-  
-  const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({
-    onDrop,
-    accept: acceptedFileTypes,
-    maxFiles: 1,
-    maxSize: maxFileSizeMB * 1024 * 1024,
-  });
-  
+
+    setFiles(prevFiles => [...prevFiles, ...acceptedFiles]);
+    onFilesAdded(acceptedFiles);
+  }, [files.length, maxFiles, onFilesAdded, toast]);
+
   const removeFile = (index: number) => {
-    setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+    setFiles(files.filter((_, i) => i !== index));
   };
-  
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept,
+    maxFiles,
+    maxSize
+  });
+
+  const formatFileSize = (size: number) => {
+    if (size < 1024) return size + ' B';
+    else if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
+    else return (size / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
   return (
-    <div className={className}>
+    <div className={cn("w-full", className)}>
       <div 
         {...getRootProps()} 
         className={cn(
-          "border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer",
-          isDragActive && !isDragReject && "border-primary bg-primary/5 animate-pulse",
-          isDragReject && "border-destructive bg-destructive/5",
-          !isDragActive && "border-muted-foreground/20 hover:border-primary/30 hover:bg-primary/5"
+          "border-2 border-dashed rounded-lg p-6 transition-colors cursor-pointer flex flex-col items-center justify-center",
+          isDragActive 
+            ? "border-primary bg-primary/5" 
+            : "border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"
         )}
       >
         <input {...getInputProps()} />
-        
-        <UploadCloud size={40} className={cn(
-          "mb-4 mx-auto transition-transform duration-300",
-          isDragActive && "scale-110",
-          isDragActive && !isDragReject && "text-primary animate-bounce",
-          isDragReject && "text-destructive"
-        )} />
-        
-        <div className="text-center">
-          <h3 className="font-medium text-lg">
-            {isDragAccept ? "Drop to upload!" : 
-             isDragReject ? "File type not supported" : 
-             "Drop your file here"}
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            or click to browse (max {maxFileSizeMB}MB)
-          </p>
-          <Button type="button" variant="outline" className="bg-white/50 dark:bg-white/5">
-            Select File
-          </Button>
-        </div>
+        <FileUp className={cn("h-10 w-10 mb-3", isDragActive ? "text-primary" : "text-muted-foreground")} />
+        <p className="text-center mb-1 font-medium">
+          {isDragActive ? "Drop files here" : "Drag & drop files here"}
+        </p>
+        <p className="text-center text-sm text-muted-foreground mb-3">
+          or click to select files
+        </p>
+        <Button type="button" size="sm" variant="outline" className="mt-2">
+          <FilePlus className="h-4 w-4 mr-2" />
+          Select Files
+        </Button>
+        <p className="text-xs text-muted-foreground mt-3">
+          Max {maxFiles} {maxFiles === 1 ? 'file' : 'files'}, up to {formatFileSize(maxSize)} each
+        </p>
       </div>
-      
-      {uploading && (
-        <div className="mt-4 animate-fade-in">
-          <p className="text-sm mb-2">Uploading...</p>
-          <Progress value={progress} className="h-2" />
-        </div>
-      )}
-      
+
       {files.length > 0 && (
-        <div className="mt-6">
-          <h4 className="font-medium mb-2">Selected File:</h4>
-          <div className="grid grid-cols-1 gap-2">
-            {files.map((file, index) => {
-              // Find preview for this file if it exists
-              const preview = previews.find(p => p.file === file);
-              
-              return (
-                <div 
-                  key={`${file.name}-${index}`} 
-                  className="flex items-center justify-between p-3 bg-muted rounded-md animate-scale-in group hover:bg-muted/80 transition-colors"
-                >
-                  <div className="flex items-center overflow-hidden">
-                    {preview ? (
-                      <img 
-                        src={preview.preview} 
-                        alt={file.name}
-                        className="w-8 h-8 object-cover rounded mr-2" 
-                      />
-                    ) : (
-                      getIconForFile(file)
-                    )}
-                    <span className="text-sm truncate max-w-[180px]" title={file.name}>
-                      {file.name}
-                    </span>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => removeFile(index)}
-                    className="h-6 w-6 opacity-70 group-hover:opacity-100"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+        <div className="mt-4 space-y-2">
+          <p className="text-sm font-medium mb-2">Selected Files:</p>
+          {files.map((file, index) => (
+            <div key={index} className="flex items-center justify-between bg-muted/30 p-2 rounded-lg">
+              <div className="flex items-center overflow-hidden">
+                <div className="bg-primary/10 p-2 rounded-md mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
                 </div>
-              );
-            })}
-          </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="ml-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => removeFile(index)}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Remove file</span>
+              </Button>
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -17,7 +17,7 @@ interface PasswordDialogProps {
   title: string;
   description: string;
   onClose: () => void;
-  onSubmit: (password: string) => void;
+  onConfirm: (password: string) => void;
 }
 
 const PasswordDialog: React.FC<PasswordDialogProps> = ({
@@ -25,13 +25,13 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
   title,
   description,
   onClose,
-  onSubmit,
+  onConfirm,
 }) => {
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(password);
+    onConfirm(password);
     setPassword('');
   };
 

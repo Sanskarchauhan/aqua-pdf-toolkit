@@ -488,9 +488,9 @@ const ToolPage = () => {
           onReset={handleReset}
         >
           <FileUploader
-            onFilesAdded={handleFilesAdded}
             accept={toolInfo.acceptedFormats}
             maxFiles={toolInfo.maxFiles}
+            onFilesAdded={handleFilesAdded}
             className="mb-4"
           />
           
@@ -545,7 +545,7 @@ const ToolPage = () => {
         </ToolCard>
         
         <PasswordDialog
-          isOpen={showPasswordDialog}
+          open={showPasswordDialog}
           title={toolId === 'unlock-pdf' ? 'Enter PDF Password' : 'Set PDF Password'}
           description={
             toolId === 'unlock-pdf' 
@@ -557,7 +557,7 @@ const ToolPage = () => {
         />
         
         <PremiumModal
-          isOpen={showPremiumModal}
+          open={showPremiumModal}
           onClose={() => setShowPremiumModal(false)}
         />
         

@@ -51,6 +51,7 @@ export const useAuth = () => useContext(AuthContext);
 
 // Storage keys
 const AUTH_USER_KEY = 'aquapdf_current_user';
+const AUTH_USERS_KEY = 'aquapdf_users';
 const MAX_FREE_TRIALS = 3;
 
 // Auth provider component
@@ -68,8 +69,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check if user is already logged in
     const storedUser = localStorage.getItem(AUTH_USER_KEY);
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+      } catch (err) {
+        console.error("Error parsing stored user:", err);
+        localStorage.removeItem(AUTH_USER_KEY);
+      }
     }
     setIsLoading(false);
   }, []);
@@ -109,12 +116,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       // For development - use localStorage implementation
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' || true) { // Always use localStorage for now
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Get users from localStorage
-        const users = JSON.parse(localStorage.getItem('aquapdf_users') || '{}');
+        const users = JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '{}');
         
         if (users[email] && users[email].password === password) {
           const currentUser = {
@@ -170,12 +177,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       // For development - use localStorage implementation
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' || true) { // Always use localStorage for now
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Get users from localStorage
-        const users = JSON.parse(localStorage.getItem('aquapdf_users') || '{}');
+        const users = JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '{}');
         
         // Check if user already exists
         if (users[email]) {
@@ -183,9 +190,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return false;
         }
         
+        // Generate a unique ID
+        const id = crypto.randomUUID ? crypto.randomUUID() : 
+              Math.random().toString(36).substring(2, 15) + 
+              Math.random().toString(36).substring(2, 15);
+        
         // Create new user
         const newUser = {
-          id: crypto.randomUUID(),
+          id,
           name,
           email,
           password, // In real app this would be hashed
@@ -194,7 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         users[email] = newUser;
-        localStorage.setItem('aquapdf_users', JSON.stringify(users));
+        localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
         
         // Auto login after signup
         const currentUser = {
@@ -247,8 +259,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       // For development - use localStorage implementation
-      if (process.env.NODE_ENV === 'development') {
-        const users = JSON.parse(localStorage.getItem('aquapdf_users') || '{}');
+      if (process.env.NODE_ENV === 'development' || true) { // Always use localStorage for now
+        const users = JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '{}');
         const updatedUser = users[user.email];
         
         if (updatedUser) {
@@ -256,7 +268,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!updatedUser.isSubscribed) {
             updatedUser.trialCount = (updatedUser.trialCount || 0) + 1;
             users[user.email] = updatedUser;
-            localStorage.setItem('aquapdf_users', JSON.stringify(users));
+            localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
             
             // Update local user state
             const newUserState = {
@@ -321,14 +333,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       // For development - use localStorage implementation
-      if (process.env.NODE_ENV === 'development') {
-        const users = JSON.parse(localStorage.getItem('aquapdf_users') || '{}');
+      if (process.env.NODE_ENV === 'development' || true) { // Always use localStorage for now
+        const users = JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '{}');
         const updatedUser = users[user.email];
         
         if (updatedUser) {
           updatedUser.isSubscribed = true;
           users[user.email] = updatedUser;
-          localStorage.setItem('aquapdf_users', JSON.stringify(users));
+          localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
           
           // Update local user state
           const newUserState = {

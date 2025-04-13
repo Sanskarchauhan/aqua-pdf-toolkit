@@ -1,454 +1,297 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import FileUploader from '@/components/shared/FileUploader';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  FileText, FileUp, Wand2, Layers, Pencil, ScanLine, 
-  FileSignature, Lock, Camera, ArrowRight,
-  Trash2, Plus, File, Sparkles, Loader2
+import { 
+  Files, 
+  History, 
+  Star, 
+  Upload, 
+  ArrowRight,
+  FileUp,
+  Layers,
+  FileText,
+  ScanLine,
+  Pencil,
+  Lock, 
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  getWorkspace, 
-  addToWorkspace, 
-  removeFromWorkspace, 
-  clearWorkspace,
-  WorkspaceItem 
-} from '@/utils/workspaceManager';
+import AnimatedPage from '@/components/animation/AnimatedPage';
 import { useAuth } from '@/contexts/AuthContext';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import FileUploader from '@/components/shared/FileUploader';
 
 const Workspace = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
-  const [files, setFiles] = useState<File[]>([]);
-  const [selectedTool, setSelectedTool] = useState('');
-  const [workspaceItems, setWorkspaceItems] = useState<WorkspaceItem[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { user } = useAuth();
   
-  // Load workspace on component mount
-  useEffect(() => {
-    const items = getWorkspace();
-    setWorkspaceItems(items);
-    
-    // Redirect to login if not authenticated
-    if (!isAuthenticated) {
-      // We'll allow browsing but show a prompt when trying to use tools
+  const recentFiles = []; // This would be populated from API in real app
+  const favorites = []; // This would be populated from API in real app
+  
+  // Mock function for file upload handling
+  const handleFilesAdded = (files: File[]) => {
+    if (files.length > 0) {
+      const fileType = files[0].name.split('.').pop()?.toLowerCase();
+      
+      if (fileType === 'pdf') {
+        navigate('/tool/edit-pdf');
+      } else if (['doc', 'docx'].includes(fileType || '')) {
+        navigate('/tool/word-to-pdf');
+      } else if (['jpg', 'jpeg', 'png'].includes(fileType || '')) {
+        navigate('/tool/jpg-to-pdf');
+      }
     }
-  }, [isAuthenticated]);
-
-  // Handle file upload
-  const handleFilesAdded = (newFiles: File[]) => {
-    setFiles(prevFiles => [...prevFiles, ...newFiles]);
-    toast({
-      title: "Files added successfully",
-      description: `${newFiles.length} ${newFiles.length === 1 ? 'file' : 'files'} added to your workspace.`,
-    });
   };
-
-  // Tool categories for quick access
-  const toolCategories = [
+  
+  // Popular tools list
+  const popularTools = [
     {
-      id: 'compress',
-      name: 'Compress',
+      id: 'compress-pdf',
+      name: 'Compress PDF',
       icon: FileUp,
-      tools: ['compress-pdf']
+      color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
     },
     {
-      id: 'convert',
-      name: 'Convert',
-      icon: FileText,
-      tools: ['pdf-to-word', 'word-to-pdf', 'pdf-to-excel', 'excel-to-pdf', 'pdf-to-ppt', 'ppt-to-pdf', 'pdf-to-jpg', 'jpg-to-pdf']
-    },
-    {
-      id: 'organize',
-      name: 'Organize',
+      id: 'merge-pdf',
+      name: 'Merge PDFs',
       icon: Layers,
-      tools: ['merge-pdf', 'split-pdf']
+      color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
     },
     {
-      id: 'edit',
-      name: 'Edit',
-      icon: Pencil,
-      tools: ['edit-pdf', 'rotate-pdf']
+      id: 'pdf-to-word',
+      name: 'PDF to Word',
+      icon: FileText,
+      color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
     },
     {
-      id: 'ocr',
-      name: 'OCR',
+      id: 'pdf-ocr',
+      name: 'PDF OCR',
       icon: ScanLine,
-      tools: ['pdf-ocr']
+      color: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400',
     },
     {
-      id: 'sign',
-      name: 'Sign',
-      icon: FileSignature,
-      tools: ['sign-pdf', 'request-signature']
+      id: 'edit-pdf',
+      name: 'Edit PDF',
+      icon: Pencil,
+      color: 'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400',
     },
     {
-      id: 'security',
-      name: 'Security',
+      id: 'protect-pdf',
+      name: 'Protect PDF',
       icon: Lock,
-      tools: ['unlock-pdf', 'protect-pdf']
+      color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
     },
-    {
-      id: 'scan',
-      name: 'Scan',
-      icon: Camera,
-      tools: ['pdf-scanner']
-    }
   ];
 
-  // Select a tool
-  const handleToolSelect = (toolId: string) => {
-    setSelectedTool(toolId);
-    toast({
-      title: "Tool selected",
-      description: "Please configure tool settings and click Process to continue.",
-    });
-  };
-
-  // Save to workspace
-  const handleSaveToWorkspace = () => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to save items to your workspace.",
-        variant: "destructive",
-      });
-      navigate('/login');
-      return;
-    }
-    
-    if (files.length === 0) {
-      toast({
-        title: "No files added",
-        description: "Please add at least one file to save to workspace.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    addToWorkspace(files, selectedTool);
-    
-    // Refresh workspace items
-    setWorkspaceItems(getWorkspace());
-    
-    // Clear the files and selected tool after saving to workspace
-    setFiles([]);
-    setSelectedTool('');
-    
-    toast({
-      title: "Saved to workspace",
-      description: "Your files have been saved to your workspace.",
-    });
-  };
-  
-  // Remove item from workspace
-  const handleRemoveItem = (id: string) => {
-    removeFromWorkspace(id);
-    setWorkspaceItems(getWorkspace());
-  };
-  
-  // Clear entire workspace
-  const handleClearWorkspace = () => {
-    if (workspaceItems.length === 0) return;
-    
-    if (confirm('Are you sure you want to clear your entire workspace? This cannot be undone.')) {
-      clearWorkspace();
-      setWorkspaceItems([]);
-    }
-  };
-  
-  // Process with selected tool
-  const handleProcessWithTool = () => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to process files.",
-        variant: "destructive",
-      });
-      navigate('/login');
-      return;
-    }
-    
-    if (!selectedTool) {
-      toast({
-        title: "No tool selected",
-        description: "Please select a tool first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (files.length === 0) {
-      toast({
-        title: "No files added",
-        description: "Please add at least one file.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsProcessing(true);
-    
-    // Simulate processing delay
-    setTimeout(() => {
-      setIsProcessing(false);
-      
-      // Navigate to the selected tool page with these files
-      // In a real implementation, we would pass the files through state management
-      // For now, we'll just redirect and use workspace functionality later
-      navigate(`/tools/${selectedTool}`);
-    }, 1500);
-  };
-  
-  // Use workspace item
-  const handleUseWorkspaceItem = (item: WorkspaceItem) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to use workspace items.",
-        variant: "destructive",
-      });
-      navigate('/login');
-      return;
-    }
-    
-    if (item.toolId) {
-      // Navigate to the tool page
-      navigate(`/tools/${item.toolId}`);
-    } else {
-      // Set the files but no tool selected
-      setFiles(item.files);
-      setSelectedTool('');
-      
-      toast({
-        title: "Files loaded from workspace",
-        description: "Please select a tool to process these files.",
-      });
-    }
-  };
-  
-  // Format date for display
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-  
-  // Get tool name in presentable format
-  const getToolDisplayName = (toolId: string) => {
-    return toolId
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, letter => letter.toUpperCase());
-  };
-
   return (
-    <>
+    <AnimatedPage>
       <Navbar />
-
-      <div className="container mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold mb-2 gradient-text">Your Workspace</h1>
-        <p className="text-xl text-muted-foreground mb-8">
-          Upload your files and select a tool to get started
-        </p>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left column - File uploader */}
-          <div className="lg:col-span-2">
-            <div className="bg-card border rounded-lg p-6 shadow-sm hover:shadow-md transition-all">
-              <h2 className="text-xl font-medium mb-4 flex items-center">
-                <Sparkles className="h-5 w-5 mr-2 text-primary" />
-                Upload Files
-              </h2>
-              <FileUploader onFilesAdded={handleFilesAdded} className="mb-4" />
-              
-              {files.length > 0 && (
-                <div className="text-center mt-6 flex justify-center gap-4">
-                  <Button 
-                    onClick={handleProcessWithTool} 
-                    className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90"
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
+      <div className="container mx-auto px-4 py-10">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Welcome{user?.name ? `, ${user.name}` : ''}</h1>
+          <p className="text-muted-foreground">
+            Manage your documents and access your favorite tools
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Upload className="mr-2 h-5 w-5" />
+                Quick Upload
+              </CardTitle>
+              <CardDescription>
+                Upload a file to get started with processing
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FileUploader
+                accept={{
+                  'application/pdf': ['.pdf'],
+                  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+                  'application/msword': ['.doc'],
+                  'image/jpeg': ['.jpg', '.jpeg'],
+                  'image/png': ['.png']
+                }}
+                maxFiles={1}
+                onFilesAdded={handleFilesAdded}
+                className=""
+              />
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Star className="mr-2 h-5 w-5" />
+                Subscription Status
+              </CardTitle>
+              <CardDescription>
+                Your current plan and usage
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-muted p-4 rounded-lg">
+                  <p className="font-semibold mb-1">
+                    {user?.isSubscribed ? 'Premium Plan' : 'Free Plan'}
+                  </p>
+                  <div className="text-sm text-muted-foreground">
+                    {user?.isSubscribed ? (
+                      <p>You have unlimited access to all premium features.</p>
                     ) : (
                       <>
-                        Process Files
-                        <ArrowRight className="h-4 w-4" />
+                        <p className="mb-2">Free trial usage: {user?.trialCount || 0}/3</p>
+                        <div className="w-full bg-muted-foreground/20 rounded-full h-1.5">
+                          <div 
+                            className="bg-primary h-1.5 rounded-full"
+                            style={{ width: `${Math.min(100, ((user?.trialCount || 0) / 3) * 100)}%` }}
+                          ></div>
+                        </div>
                       </>
                     )}
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    onClick={handleSaveToWorkspace}
-                    className="gap-2"
-                    disabled={isProcessing}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Save to Workspace
-                  </Button>
+                  </div>
                 </div>
-              )}
+                
+                {!user?.isSubscribed && (
+                  <Button 
+                    className="w-full"
+                    onClick={() => navigate('/pricing')}
+                  >
+                    Upgrade to Premium
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <div className="space-y-6">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Popular Tools</h2>
+              <Button 
+                variant="link" 
+                className="text-primary"
+                onClick={() => navigate('/tools')}
+              >
+                View All Tools <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
             </div>
             
-            {/* Workspace items */}
-            {workspaceItems.length > 0 && (
-              <div className="bg-card border rounded-lg p-6 mt-8 shadow-sm hover:shadow-md transition-all">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-medium flex items-center">
-                    <File className="h-5 w-5 mr-2 text-primary" />
-                    Your Workspace
-                  </h2>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleClearWorkspace}
-                    className="text-xs h-8"
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Clear All
-                  </Button>
-                </div>
-                
-                <div className="space-y-4">
-                  {workspaceItems.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className="border rounded-md p-4 flex justify-between items-center hover:border-primary/30 transition-all card-hover-effect"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="bg-primary/10 p-2 rounded-full">
-                          <File className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">
-                            {item.files.length} {item.files.length === 1 ? 'file' : 'files'}
-                            {item.toolId ? ` - ${getToolDisplayName(item.toolId)}` : ''}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Added on {formatDate(item.dateAdded)}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          className="h-8 bg-gradient-to-r from-primary to-accent hover:opacity-90" 
-                          onClick={() => handleUseWorkspaceItem(item)}
-                        >
-                          Use
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-8"
-                          onClick={() => handleRemoveItem(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {popularTools.map(tool => (
+                <Card 
+                  key={tool.id}
+                  className="border cursor-pointer transition-all hover:shadow-md"
+                  onClick={() => navigate(`/tool/${tool.id}`)}
+                >
+                  <CardContent className="p-4 text-center">
+                    <div className={`${tool.color} rounded-full p-3 mx-auto w-12 h-12 flex items-center justify-center mb-2`}>
+                      <tool.icon className="h-5 w-5" />
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Right column - Tool selection */}
-          <div>
-            <div className="bg-card border rounded-lg p-6 shadow-sm hover:shadow-md transition-all">
-              <h2 className="text-xl font-medium mb-4 flex items-center">
-                <Wand2 className="h-5 w-5 mr-2 text-primary" />
-                Select Tool
-              </h2>
-              
-              <Tabs defaultValue="recent">
-                <TabsList className="w-full mb-4">
-                  <TabsTrigger value="recent" className="flex-1">Recent</TabsTrigger>
-                  <TabsTrigger value="all" className="flex-1">All Tools</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="recent" className="space-y-2">
-                  {/* Recent/featured tools */}
-                  {['compress-pdf', 'merge-pdf', 'pdf-to-word', 'pdf-to-excel', 'rotate-pdf'].map(toolId => (
-                    <Button
-                      key={toolId}
-                      variant={selectedTool === toolId ? "default" : "outline"}
-                      className={`w-full justify-start ${selectedTool === toolId ? 'bg-gradient-to-r from-primary to-accent' : ''}`}
-                      onClick={() => handleToolSelect(toolId)}
-                    >
-                      {toolId === 'compress-pdf' && <FileUp className="h-4 w-4 mr-2" />}
-                      {toolId === 'merge-pdf' && <Layers className="h-4 w-4 mr-2" />}
-                      {toolId === 'pdf-to-word' && <FileText className="h-4 w-4 mr-2" />}
-                      {toolId === 'pdf-to-excel' && <FileText className="h-4 w-4 mr-2" />}
-                      {toolId === 'rotate-pdf' && <FileText className="h-4 w-4 mr-2" />}
-                      
-                      {getToolDisplayName(toolId)}
-                    </Button>
-                  ))}
-                </TabsContent>
-                
-                <TabsContent value="all">
-                  <div className="space-y-6">
-                    {toolCategories.map(category => (
-                      <div key={category.id} className="animate-fade-in">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
-                          <category.icon className="h-4 w-4" />
-                          {category.name}
-                        </div>
-                        <div className="space-y-1">
-                          {category.tools.map(toolId => (
-                            <Button
-                              key={toolId}
-                              variant={selectedTool === toolId ? "default" : "outline"}
-                              className={`w-full justify-start text-sm h-8 ${selectedTool === toolId ? 'bg-gradient-to-r from-primary to-accent' : ''}`}
-                              onClick={() => handleToolSelect(toolId)}
-                            >
-                              {getToolDisplayName(toolId)}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
-              
-              {user && (
-                <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
-                  <div className="flex items-center">
-                    <Avatar className="h-10 w-10 mr-3">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        {user.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                    <p className="text-sm font-medium">{tool.name}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
+          </div>
+          
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Your Documents</h2>
+            
+            <Card>
+              <Tabs defaultValue="recent">
+                <CardHeader className="pb-0">
+                  <TabsList>
+                    <TabsTrigger value="recent" className="flex items-center gap-2">
+                      <History className="h-4 w-4" />
+                      Recent
+                    </TabsTrigger>
+                    <TabsTrigger value="favorites" className="flex items-center gap-2">
+                      <Star className="h-4 w-4" />
+                      Favorites
+                    </TabsTrigger>
+                    <TabsTrigger value="all" className="flex items-center gap-2">
+                      <Files className="h-4 w-4" />
+                      All Files
+                    </TabsTrigger>
+                  </TabsList>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <TabsContent value="recent">
+                    {recentFiles.length > 0 ? (
+                      <div className="space-y-2">
+                        {/* File list would go here */}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="bg-muted/50 rounded-full p-4 w-16 h-16 mx-auto flex items-center justify-center mb-3">
+                          <History className="h-8 w-8 text-muted-foreground/70" />
+                        </div>
+                        <h3 className="font-medium mb-1">No recent files</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Files you work with will appear here
+                        </p>
+                        <Button onClick={() => navigate('/tools')}>
+                          Browse Tools
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="favorites">
+                    {favorites.length > 0 ? (
+                      <div className="space-y-2">
+                        {/* Favorites list would go here */}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="bg-muted/50 rounded-full p-4 w-16 h-16 mx-auto flex items-center justify-center mb-3">
+                          <Star className="h-8 w-8 text-muted-foreground/70" />
+                        </div>
+                        <h3 className="font-medium mb-1">No favorites yet</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Star files to add them to your favorites
+                        </p>
+                        <Button onClick={() => navigate('/tools')}>
+                          Browse Tools
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="all">
+                    <div className="text-center py-8">
+                      <div className="bg-muted/50 rounded-full p-4 w-16 h-16 mx-auto flex items-center justify-center mb-3">
+                        <Files className="h-8 w-8 text-muted-foreground/70" />
+                      </div>
+                      <h3 className="font-medium mb-1">Start working with files</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Upload and process files to see them here
+                      </p>
+                      <Button onClick={() => navigate('/tools')}>
+                        Browse Tools
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </CardContent>
+              </Tabs>
+            </Card>
           </div>
         </div>
       </div>
-      
       <Footer />
-    </>
+    </AnimatedPage>
   );
 };
 
