@@ -18,6 +18,7 @@ interface PasswordDialogProps {
   description: string;
   onClose: () => void;
   onConfirm: (password: string) => void;
+  onSubmit?: (password: string) => void; // Added for compatibility
 }
 
 const PasswordDialog: React.FC<PasswordDialogProps> = ({
@@ -26,12 +27,18 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
   description,
   onClose,
   onConfirm,
+  onSubmit,
 }) => {
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onConfirm(password);
+    // Call either onConfirm or onSubmit based on which one is provided
+    if (onSubmit) {
+      onSubmit(password);
+    } else {
+      onConfirm(password);
+    }
     setPassword('');
   };
 

@@ -10,19 +10,31 @@ export interface FileUploaderProps {
   accept: Record<string, string[]>;
   maxFiles?: number;
   maxSize?: number;
+  maxFileSizeMB?: number; // Added for compatibility with tool pages
   className?: string;
-  onFilesAdded: (files: File[]) => void;
+  onFilesAdded?: (files: File[]) => void;
+  onFileSelect?: (file: File) => void; // Added for single file selection
+  acceptedFileTypes?: Record<string, string[]>; // Added for compatibility with tool pages
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
   accept,
+  acceptedFileTypes, // Support alternative prop name
   maxFiles = 1,
-  maxSize = 10 * 1024 * 1024, // 10MB default
+  maxSize: propMaxSize,
+  maxFileSizeMB = 10, // Default 10MB
   className,
   onFilesAdded,
+  onFileSelect,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
   const { toast } = useToast();
+  
+  // Calculate maxSize in bytes
+  const maxSize = propMaxSize || maxFileSizeMB * 1024 * 1024;
+  
+  // Use acceptedFileTypes if provided, otherwise use accept
+  const acceptedTypes = acceptedFileTypes || accept;
 
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
     if (fileRejections.length > 0) {
@@ -52,9 +64,19 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       return;
     }
 
+    // Update internal state
     setFiles(prevFiles => [...prevFiles, ...acceptedFiles]);
-    onFilesAdded(acceptedFiles);
-  }, [files.length, maxFiles, onFilesAdded, toast]);
+    
+    // Call callbacks
+    if (onFilesAdded) {
+      onFilesAdded(acceptedFiles);
+    }
+    
+    // If single file selection is used
+    if (onFileSelect && acceptedFiles.length > 0) {
+      onFileSelect(acceptedFiles[0]);
+    }
+  }, [files.length, maxFiles, onFilesAdded, onFileSelect, toast]);
 
   const removeFile = (index: number) => {
     setFiles(files.filter((_, i) => i !== index));
@@ -62,7 +84,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept,
+    accept: acceptedTypes,
     maxFiles,
     maxSize
   });

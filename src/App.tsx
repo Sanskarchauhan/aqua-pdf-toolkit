@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
@@ -22,6 +21,8 @@ import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
+import EditPdf from "./pages/tools/EditPdf";
+import PdfOcr from "./pages/tools/PdfOcr";
 
 // Function to set initial theme from localStorage to prevent flashing
 const setInitialTheme = () => {
@@ -82,11 +83,26 @@ const AnimatedRoutes = () => {
         <Routes location={location}>
           <Route path="/" element={<Index />} />
           <Route path="/tools" element={<Tools />} />
+          
           <Route path="/tools/:toolId" element={
             <ProtectedRoute>
               <ToolPage />
             </ProtectedRoute>
           } />
+          
+          <Route path="/tool/:toolId" element={<Navigate to={(location) => `/tools${location.pathname.substring(5)}`} replace />} />
+          
+          <Route path="/tools/edit-pdf" element={
+            <ProtectedRoute>
+              <EditPdf />
+            </ProtectedRoute>
+          } />
+          <Route path="/tools/pdf-ocr" element={
+            <ProtectedRoute>
+              <PdfOcr />
+            </ProtectedRoute>
+          } />
+          
           <Route path="/workspace" element={
             <ProtectedRoute>
               <Workspace />
@@ -97,7 +113,6 @@ const AnimatedRoutes = () => {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/get-started" element={<GetStarted />} />
           
-          {/* Footer Pages */}
           <Route path="/about" element={<About />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
