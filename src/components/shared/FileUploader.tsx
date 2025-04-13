@@ -8,10 +8,9 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
 type FileUploaderProps = {
-  onFilesAdded: (files: File[]) => void;
-  accept?: Record<string, string[]>;
-  maxFiles?: number;
-  maxSize?: number;
+  onFileSelect: (file: File) => void;
+  acceptedFileTypes?: Record<string, string[]> | string[];
+  maxFileSizeMB?: number;
   className?: string;
 };
 
@@ -32,12 +31,11 @@ const getIconForFile = (file: File) => {
 };
 
 const FileUploader: React.FC<FileUploaderProps> = ({
-  onFilesAdded,
-  accept = {
+  onFileSelect,
+  acceptedFileTypes = {
     'application/pdf': ['.pdf'],
   },
-  maxFiles = 10,
-  maxSize = 10485760, // 10MB
+  maxFileSizeMB = 10,
   className,
 }) => {
   const { toast } = useToast();
@@ -68,7 +66,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         if (errors[0]?.code === 'file-too-large') {
           toast({
             title: "File too large",
-            description: `${file.name} exceeds the ${maxSize / 1048576}MB limit.`,
+            description: `${file.name} exceeds the ${maxFileSizeMB}MB limit.`,
             variant: "destructive",
           });
         } else {
@@ -82,49 +80,40 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       return;
     }
     
-    // Check for maximum number of files
-    if (files.length + acceptedFiles.length > maxFiles) {
-      toast({
-        title: "Too many files",
-        description: `You can only upload a maximum of ${maxFiles} files at once.`,
-        variant: "destructive",
-      });
-      return;
+    // We only care about the first file since we're selecting one file at a time
+    if (acceptedFiles.length > 0) {
+      const selectedFile = acceptedFiles[0];
+      
+      // Simulate upload progress
+      setUploading(true);
+      setProgress(0);
+      
+      const interval = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev + 10;
+          if (newProgress >= 100) {
+            clearInterval(interval);
+            setUploading(false);
+            
+            // Use setTimeout to avoid React state updates during render
+            setTimeout(() => {
+              setFiles([selectedFile]);
+              onFileSelect(selectedFile);
+            }, 0);
+            
+            return 100;
+          }
+          return newProgress;
+        });
+      }, 200);
     }
-    
-    // Simulate upload progress
-    setUploading(true);
-    setProgress(0);
-    
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        const newProgress = prev + 10;
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setUploading(false);
-          
-          // Use setTimeout to avoid React state updates during render
-          setTimeout(() => {
-            setFiles(prevFiles => {
-              const combinedFiles = [...prevFiles, ...acceptedFiles];
-              onFilesAdded(acceptedFiles);
-              return combinedFiles;
-            });
-          }, 0);
-          
-          return 100;
-        }
-        return newProgress;
-      });
-    }, 200);
-    
-  }, [maxSize, maxFiles, files, onFilesAdded, toast]);
+  }, [maxFileSizeMB, onFileSelect, toast]);
   
   const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({
     onDrop,
-    accept,
-    maxFiles: maxFiles - files.length,
-    maxSize,
+    accept: acceptedFileTypes,
+    maxFiles: 1,
+    maxSize: maxFileSizeMB * 1024 * 1024,
   });
   
   const removeFile = (index: number) => {
@@ -155,13 +144,13 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           <h3 className="font-medium text-lg">
             {isDragAccept ? "Drop to upload!" : 
              isDragReject ? "File type not supported" : 
-             "Drop your files here"}
+             "Drop your file here"}
           </h3>
           <p className="text-muted-foreground mb-4">
-            or click to browse (max {maxSize / 1048576}MB)
+            or click to browse (max {maxFileSizeMB}MB)
           </p>
           <Button type="button" variant="outline" className="bg-white/50 dark:bg-white/5">
-            Select Files
+            Select File
           </Button>
         </div>
       </div>
@@ -175,8 +164,8 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       
       {files.length > 0 && (
         <div className="mt-6">
-          <h4 className="font-medium mb-2">Added Files:</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <h4 className="font-medium mb-2">Selected File:</h4>
+          <div className="grid grid-cols-1 gap-2">
             {files.map((file, index) => {
               // Find preview for this file if it exists
               const preview = previews.find(p => p.file === file);

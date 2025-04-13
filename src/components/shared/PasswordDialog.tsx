@@ -13,30 +13,30 @@ import { Input } from '@/components/ui/input';
 import { Lock } from 'lucide-react';
 
 interface PasswordDialogProps {
-  isOpen: boolean;
+  open: boolean;
   title: string;
   description: string;
   onClose: () => void;
-  onConfirm: (password: string) => void;
+  onSubmit: (password: string) => void;
 }
 
 const PasswordDialog: React.FC<PasswordDialogProps> = ({
-  isOpen,
+  open,
   title,
   description,
   onClose,
-  onConfirm,
+  onSubmit,
 }) => {
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onConfirm(password);
+    onSubmit(password);
     setPassword('');
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

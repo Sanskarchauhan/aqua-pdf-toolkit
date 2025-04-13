@@ -172,7 +172,9 @@ const EditPdf = () => {
                 </h2>
                 <FileUploader 
                   onFileSelect={handleFileSelect}
-                  acceptedFileTypes={['application/pdf']}
+                  acceptedFileTypes={{
+                    'application/pdf': ['.pdf']
+                  }}
                   maxFileSizeMB={10}
                 />
               </div>
