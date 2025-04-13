@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import ThemeToggle from '../theme/ThemeToggle';
 
 const Navbar = () => {
   const location = useLocation();
@@ -111,6 +112,9 @@ const Navbar = () => {
         </div>
         
         <div className="ml-auto hidden md:flex items-center gap-2">
+          {/* Add theme toggle button */}
+          <ThemeToggle />
+          
           {!isAuthenticated ? (
             <>
               <Button variant="outline" size="sm" asChild>

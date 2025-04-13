@@ -90,7 +90,7 @@ const AnimatedRoutes = () => {
             </ProtectedRoute>
           } />
           
-          <Route path="/tool/:toolId" element={<Navigate to={(location) => `/tools${location.pathname.substring(5)}`} replace />} />
+          <Route path="/tool/:toolId" element={<Navigate to={`/tools/${location.pathname.substring(6)}`} replace />} />
           
           <Route path="/tools/edit-pdf" element={
             <ProtectedRoute>
