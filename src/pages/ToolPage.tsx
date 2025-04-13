@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -410,8 +409,6 @@ const ToolPage = () => {
     },
   };
   
-  // Removed sign-pdf tool from the list since we're removing SignatureCanvas functionality
-  
   const toolInfo = toolId ? tools[toolId] : null;
   
   if (!toolInfo) {
@@ -488,8 +485,8 @@ const ToolPage = () => {
           onReset={handleReset}
         >
           <FileUploader
-            accept={toolInfo.acceptedFormats}
-            maxFiles={toolInfo.maxFiles}
+            accept={toolInfo?.acceptedFormats}
+            maxFiles={toolInfo?.maxFiles || 1}
             onFilesAdded={handleFilesAdded}
             className="mb-4"
           />
@@ -514,7 +511,6 @@ const ToolPage = () => {
             </motion.div>
           )}
           
-          {/* Trial count indicator for non-subscribed users */}
           {user && !user.isSubscribed && (
             <motion.div 
               className="mt-4 text-center text-sm text-muted-foreground"
@@ -595,7 +591,7 @@ const ToolPage = () => {
               </div>
               <h3 className="font-medium mb-2">Upload Your Files</h3>
               <p className="text-muted-foreground">
-                Select or drag and drop your {toolInfo.maxFiles > 1 ? 'files' : 'file'} into the upload area.
+                Select or drag and drop your {toolInfo?.maxFiles || 1} {toolInfo?.maxFiles === 1 ? 'file' : 'files'} into the upload area.
               </p>
             </motion.div>
             

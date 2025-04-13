@@ -4,15 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Unlock, Lock, FileText, Download } from 'lucide-react';
+import { Unlock, FileText, Download, Lock } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FileUploader from '@/components/shared/FileUploader';
 import PDFViewer from '@/components/shared/PDFViewer';
-import PasswordDialog from '@/components/shared/PasswordDialog';
 import { processFile } from '@/utils/fileProcessing';
 import { useAuth } from '@/contexts/AuthContext';
 import PremiumModal from '@/components/shared/PremiumModal';
+import PasswordDialog from '@/components/shared/PasswordDialog';
 
 const UnlockPdf = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -26,10 +26,10 @@ const UnlockPdf = () => {
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
-    setResultFile(null);
+    setResultFile(null); // Reset result when new file is selected
   };
 
-  const handleUnlockClick = () => {
+  const handleUnlock = async () => {
     if (!file) {
       toast({
         title: "No file selected",
@@ -61,26 +61,26 @@ const UnlockPdf = () => {
   const handlePasswordSubmit = async (password: string) => {
     if (!file) return;
     
-    setShowPasswordDialog(false);
     setIsProcessing(true);
+    setShowPasswordDialog(false);
     
     try {
-      // Increase trial count
+      // Increase trial count - only counts if user is not subscribed
       increaseTrialCount();
       
-      // Process file with the password
+      // Process the file with password
       const result = await processFile('unlock-pdf', [file], { password });
       setResultFile(result);
       
       toast({
         title: "PDF Successfully Unlocked",
-        description: "Your PDF has been unlocked and is now ready to download.",
+        description: "Your PDF has been unlocked and is ready to download.",
       });
     } catch (error) {
-      console.error('Error unlocking PDF:', error);
+      console.error('Unlock error:', error);
       toast({
-        title: "Failed to unlock PDF",
-        description: "The password may be incorrect or the file is not protected.",
+        title: "Unlock failed",
+        description: "The password may be incorrect or the PDF cannot be unlocked.",
         variant: "destructive",
       });
     } finally {
@@ -100,7 +100,7 @@ const UnlockPdf = () => {
       URL.revokeObjectURL(url);
 
       toast({
-        title: "Download Started",
+        title: "Download started",
         description: "Your unlocked PDF is downloading.",
       });
     }
@@ -117,7 +117,7 @@ const UnlockPdf = () => {
           </div>
           <h1 className="text-3xl font-bold">Unlock PDF</h1>
           <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Remove password protection from your PDF documents safely and securely.
+            Remove password protection from your PDF files.
           </p>
         </div>
 
@@ -126,8 +126,8 @@ const UnlockPdf = () => {
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-3 flex items-center">
-                  <FileText className="mr-2 h-5 w-5 text-primary" />
-                  Upload Protected PDF
+                  <Lock className="mr-2 h-5 w-5 text-primary" />
+                  Upload Password Protected PDF
                 </h2>
                 <FileUploader 
                   onFileSelect={handleFileSelect}
@@ -142,7 +142,7 @@ const UnlockPdf = () => {
                 <div>
                   <h3 className="text-lg font-medium mb-3">Selected File: {file.name}</h3>
                   <Button 
-                    onClick={handleUnlockClick} 
+                    onClick={handleUnlock} 
                     disabled={isProcessing}
                     className="w-full"
                   >
@@ -152,10 +152,7 @@ const UnlockPdf = () => {
                         <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                       </>
                     ) : (
-                      <>
-                        <Unlock className="mr-2 h-4 w-4" />
-                        Unlock PDF
-                      </>
+                      'Unlock PDF'
                     )}
                   </Button>
                   
@@ -163,7 +160,7 @@ const UnlockPdf = () => {
                     <Button 
                       onClick={handleDownload}
                       variant="outline"
-                      className="w-full mt-4"
+                      className="w-full mt-3"
                     >
                       <Download className="mr-2 h-4 w-4" />
                       Download Unlocked PDF
@@ -181,7 +178,7 @@ const UnlockPdf = () => {
                         <path d="M20 6L9 17l-5-5" />
                       </svg>
                     </span>
-                    <span>Removes user password protection from PDF files</span>
+                    <span>Removes password protection from PDFs</span>
                   </li>
                   <li className="flex items-start">
                     <span className="bg-primary/10 p-1 rounded-full mr-2 mt-0.5">
@@ -189,7 +186,7 @@ const UnlockPdf = () => {
                         <path d="M20 6L9 17l-5-5" />
                       </svg>
                     </span>
-                    <span>Your PDF is processed securely on our servers</span>
+                    <span>You must know the original password</span>
                   </li>
                   <li className="flex items-start">
                     <span className="bg-primary/10 p-1 rounded-full mr-2 mt-0.5">
@@ -197,7 +194,7 @@ const UnlockPdf = () => {
                         <path d="M20 6L9 17l-5-5" />
                       </svg>
                     </span>
-                    <span>Files and passwords are never stored</span>
+                    <span>We don't store your passwords or PDF content</span>
                   </li>
                   <li className="flex items-start">
                     <span className="bg-primary/10 p-1 rounded-full mr-2 mt-0.5">
@@ -220,25 +217,25 @@ const UnlockPdf = () => {
               <PDFViewer file={file} />
             )}
             {resultFile && (
-              <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-900/30">
-                <div className="flex items-center">
-                  <Unlock className="h-5 w-5 text-green-600 dark:text-green-400 mr-2" />
-                  <h3 className="font-medium text-green-800 dark:text-green-300">PDF Successfully Unlocked</h3>
-                </div>
-                <p className="text-sm text-green-700 dark:text-green-400 mt-1">
-                  Your PDF is now unlocked and ready to download.
+              <div className="mt-4 p-4 bg-primary/5 rounded-md border">
+                <h3 className="font-medium mb-2 flex items-center">
+                  <Unlock className="h-4 w-4 mr-2 text-primary" />
+                  PDF Unlocked Successfully
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Your PDF is now unlocked and no longer requires a password to open or edit.
                 </p>
               </div>
             )}
           </div>
         </div>
-
+        
         <PasswordDialog
           open={showPasswordDialog}
-          onClose={() => setShowPasswordDialog(false)}
-          onSubmit={handlePasswordSubmit}
           title="Enter PDF Password"
-          description="Enter the password for this protected PDF document."
+          description="Please enter the password for this PDF file to unlock it."
+          onClose={() => setShowPasswordDialog(false)}
+          onConfirm={handlePasswordSubmit}
         />
         
         <PremiumModal 

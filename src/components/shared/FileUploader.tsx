@@ -7,14 +7,14 @@ import { FileUp, FilePlus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export interface FileUploaderProps {
-  accept: Record<string, string[]>;
+  accept?: Record<string, string[]>;
+  acceptedFileTypes?: Record<string, string[]>; // Alternative prop name
   maxFiles?: number;
   maxSize?: number;
-  maxFileSizeMB?: number; // Added for compatibility with tool pages
+  maxFileSizeMB?: number; // Alternative prop name
   className?: string;
   onFilesAdded?: (files: File[]) => void;
-  onFileSelect?: (file: File) => void; // Added for single file selection
-  acceptedFileTypes?: Record<string, string[]>; // Added for compatibility with tool pages
+  onFileSelect?: (file: File) => void; // For single file selection
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
@@ -34,7 +34,9 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const maxSize = propMaxSize || maxFileSizeMB * 1024 * 1024;
   
   // Use acceptedFileTypes if provided, otherwise use accept
-  const acceptedTypes = acceptedFileTypes || accept;
+  const acceptedTypes = acceptedFileTypes || accept || {
+    'application/pdf': ['.pdf']
+  };
 
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
     if (fileRejections.length > 0) {
