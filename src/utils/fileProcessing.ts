@@ -1,4 +1,3 @@
-
 import { toast } from '@/hooks/use-toast';
 import { PDFDocument, degrees, StandardFonts, rgb } from 'pdf-lib';
 import { saveAs } from 'file-saver';
@@ -94,8 +93,7 @@ export const compressPdf = async (file: File, compressionLevel: 'low' | 'medium'
       useObjectStreams: true,
       addDefaultPage: false,
       objectsPerTick: 100,
-      // Advanced compression - force flattening of content
-      compress: true
+      // Advanced compression options
     });
     
     // Artificially reduce file size for demo purposes if the file didn't compress well
