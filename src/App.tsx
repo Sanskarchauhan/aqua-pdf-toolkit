@@ -23,6 +23,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
 import EditPdf from "./pages/tools/EditPdf";
 import PdfOcr from "./pages/tools/PdfOcr";
+import CompressPdf from "./pages/tools/CompressPdf";
 
 // Function to set initial theme from localStorage to prevent flashing
 const setInitialTheme = () => {
@@ -89,6 +90,7 @@ const AnimatedRoutes = () => {
           <Route path="/tool/:toolId" element={<Navigate to={`/tools/${location.pathname.substring(6)}`} replace />} />
           <Route path="/tools/edit-pdf" element={<EditPdf />} />
           <Route path="/tools/pdf-ocr" element={<PdfOcr />} />
+          <Route path="/tools/compress-pdf" element={<CompressPdf />} />
           
           <Route path="/workspace" element={
             <ProtectedRoute>

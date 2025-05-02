@@ -37,16 +37,22 @@ export const createResultFile = (
 // Compress PDF function using pdf-lib - improved implementation
 export const compressPdf = async (file: File): Promise<File> => {
   try {
+    console.log("Starting PDF compression for:", file.name);
     const arrayBuffer = await readFileAsArrayBuffer(file);
-    const pdfDoc = await PDFDocument.load(arrayBuffer);
     
     // Get original size for comparison
     const originalSize = file.size;
+    console.log("Original size:", originalSize);
     
-    // Create a new PDF document with the same pages
+    // Load the PDF document
+    const pdfDoc = await PDFDocument.load(arrayBuffer, {
+      updateMetadata: false,
+    });
+    
+    // Create a new PDF document with the same pages but optimized
     const compressedPdf = await PDFDocument.create();
     
-    // Copy pages but with optimization settings
+    // Copy pages with optimization
     const pages = await compressedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
     pages.forEach(page => {
       compressedPdf.addPage(page);
@@ -60,21 +66,22 @@ export const compressPdf = async (file: File): Promise<File> => {
     });
     
     // Create the compressed file
-    const result = createResultFile(
-      compressedBytes, 
-      'compress-pdf', 
-      file.name
+    const result = new File(
+      [compressedBytes],
+      `compressed-${file.name}`,
+      { type: 'application/pdf' }
     );
     
     // Log compression ratio
     const newSize = result.size;
+    console.log("Compressed size:", newSize);
     const compressionRatio = ((originalSize - newSize) / originalSize * 100).toFixed(2);
-    console.log(`Compressed PDF: ${originalSize} -> ${newSize} bytes (${compressionRatio}% reduction)`);
+    console.log(`Compression ratio: ${compressionRatio}% reduction`);
     
     return result;
   } catch (error) {
     console.error('Error compressing PDF:', error);
-    throw new Error('Failed to compress PDF');
+    throw new Error('Failed to compress PDF. Please try a different file.');
   }
 };
 
