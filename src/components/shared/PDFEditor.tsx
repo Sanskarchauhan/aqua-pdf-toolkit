@@ -8,7 +8,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Type, 
-  Eraser, 
   Save, 
   Scissors, 
   FilePlus,
@@ -27,7 +26,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 
 interface PDFEditorProps {
   file: File | null;
-  onSave: (edits: Array<{type: string, content: string, page: number, x: number, y: number}>) => void;
+  onSave?: (edits: Array<{type: string, content: string, page: number, x: number, y: number}>) => void;
   onDeletePages?: (pageNumbers: number[]) => void;
   onExtractPages?: (pageNumbers: number[]) => void;
 }
@@ -46,6 +45,11 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
   const { toast } = useToast();
   const { resolvedTheme } = useTheme();
 
+  // Check which modes are available based on the provided callbacks
+  const canEdit = Boolean(onSave);
+  const canDelete = Boolean(onDeletePages);
+  const canExtract = Boolean(onExtractPages);
+
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
   };
@@ -63,8 +67,10 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
   const zoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
 
   const handleAddTextClick = () => {
-    setMode('edit');
-    setCurrentEdit({ type: 'text', content: '' });
+    if (canEdit) {
+      setMode('edit');
+      setCurrentEdit({ type: 'text', content: '' });
+    }
   };
 
   const handleTextContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -164,7 +170,7 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
   };
 
   const handleSaveEdits = () => {
-    if (edits.length > 0) {
+    if (edits.length > 0 && onSave) {
       onSave(edits);
       setEdits([]);
       toast({
@@ -179,6 +185,15 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
       });
     }
   };
+  
+  // Set initial mode based on available operations
+  useEffect(() => {
+    if (canDelete && !canEdit && !canExtract) {
+      setMode('delete');
+    } else if (canExtract && !canEdit && !canDelete) {
+      setMode('extract');
+    }
+  }, [canDelete, canEdit, canExtract]);
 
   return (
     <div className="pdf-editor">
@@ -229,35 +244,41 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddTextClick}
-            className={mode === 'edit' ? 'bg-primary text-primary-foreground' : ''}
-          >
-            <Type className="h-4 w-4 mr-1" />
-            Add Text
-          </Button>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddTextClick}
+              className={mode === 'edit' ? 'bg-primary text-primary-foreground' : ''}
+            >
+              <Type className="h-4 w-4 mr-1" />
+              Add Text
+            </Button>
+          )}
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setMode(mode === 'delete' ? 'view' : 'delete')}
-            className={mode === 'delete' ? 'bg-destructive text-destructive-foreground' : ''}
-          >
-            <Scissors className="h-4 w-4 mr-1" />
-            Delete Pages
-          </Button>
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMode(mode === 'delete' ? 'view' : 'delete')}
+              className={mode === 'delete' ? 'bg-destructive text-destructive-foreground' : ''}
+            >
+              <Scissors className="h-4 w-4 mr-1" />
+              Delete Pages
+            </Button>
+          )}
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setMode(mode === 'extract' ? 'view' : 'extract')}
-            className={mode === 'extract' ? 'bg-primary text-primary-foreground' : ''}
-          >
-            <FilePlus className="h-4 w-4 mr-1" />
-            Extract Pages
-          </Button>
+          {canExtract && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMode(mode === 'extract' ? 'view' : 'extract')}
+              className={mode === 'extract' ? 'bg-primary text-primary-foreground' : ''}
+            >
+              <FilePlus className="h-4 w-4 mr-1" />
+              Extract Pages
+            </Button>
+          )}
           
           {edits.length > 0 && (
             <Button
@@ -270,15 +291,17 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
             </Button>
           )}
           
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleSaveEdits}
-            disabled={edits.length === 0}
-          >
-            <Save className="h-4 w-4 mr-1" />
-            Save Changes
-          </Button>
+          {canEdit && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSaveEdits}
+              disabled={edits.length === 0}
+            >
+              <Save className="h-4 w-4 mr-1" />
+              Save Changes
+            </Button>
+          )}
         </div>
       </div>
       
@@ -481,6 +504,18 @@ const PDFEditor: React.FC<PDFEditorProps> = ({ file, onSave, onDeletePages, onEx
       {edits.length > 0 && (
         <div className="mt-2 text-sm text-muted-foreground">
           {edits.length} pending edit(s). Click "Save Changes" to apply.
+        </div>
+      )}
+      
+      {/* Option to directly apply changes for extract/delete pages without an explicit Save button */}
+      {(mode === 'delete' || mode === 'extract') && selectedPages.length > 0 && (
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={mode === 'delete' ? handleDeletePages : handleExtractPages}
+            variant={mode === 'delete' ? 'destructive' : 'default'}
+          >
+            {mode === 'delete' ? 'Delete Selected Pages' : 'Extract Selected Pages'}
+          </Button>
         </div>
       )}
     </div>

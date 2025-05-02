@@ -1,160 +1,158 @@
 
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { FileUp, FilePlus, Trash2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { X, Upload, File, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export interface FileUploaderProps {
-  accept?: Record<string, string[]>;
-  acceptedFileTypes?: Record<string, string[]>; // Alternative prop name
+  acceptedFileTypes?: Record<string, string[]>;
   maxFiles?: number;
-  maxSize?: number;
-  maxFileSizeMB?: number; // Alternative prop name
+  maxFileSizeMB?: number;
+  onFilesAdded: (files: File[]) => void;
+  onFileSelect?: (file: File) => void;
   className?: string;
-  onFilesAdded?: (files: File[]) => void;
-  onFileSelect?: (file: File) => void; // For single file selection
+  label?: string;
+  icon?: React.ReactNode;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
-  accept,
-  acceptedFileTypes, // Support alternative prop name
-  maxFiles = 1,
-  maxSize: propMaxSize,
-  maxFileSizeMB = 10, // Default 10MB
-  className,
+  acceptedFileTypes,
+  maxFiles = 10,
+  maxFileSizeMB = 50,
   onFilesAdded,
   onFileSelect,
+  className = '',
+  label,
+  icon,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
-  const { toast } = useToast();
-  
-  // Calculate maxSize in bytes
-  const maxSize = propMaxSize || maxFileSizeMB * 1024 * 1024;
-  
-  // Use acceptedFileTypes if provided, otherwise use accept
-  const acceptedTypes = acceptedFileTypes || accept || {
-    'application/pdf': ['.pdf']
-  };
+  const [error, setError] = useState<string | null>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
-    if (fileRejections.length > 0) {
-      const errors = fileRejections.map(rejection => {
-        if (rejection.errors[0].code === 'file-too-large') {
-          return `"${rejection.file.name}" is too large.`;
-        } else if (rejection.errors[0].code === 'file-invalid-type') {
-          return `"${rejection.file.name}" has an unsupported file type.`;
+  const handleDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      setError(null);
+
+      // Filter out files that exceed the size limit
+      const validFiles = acceptedFiles.filter((file) => {
+        const isValidSize = file.size <= maxFileSizeMB * 1024 * 1024;
+        if (!isValidSize) {
+          setError(`File "${file.name}" is too large. Maximum size is ${maxFileSizeMB}MB.`);
+          return false;
         }
-        return `"${rejection.file.name}" - ${rejection.errors[0].message}`;
+        return true;
       });
 
-      toast({
-        title: "File Upload Error",
-        description: errors.join(' '),
-        variant: "destructive",
-      });
-      return;
-    }
+      if (validFiles.length === 0) return;
 
-    if (files.length + acceptedFiles.length > maxFiles) {
-      toast({
-        title: "Too many files",
-        description: `Maximum ${maxFiles} ${maxFiles === 1 ? 'file is' : 'files are'} allowed.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Update internal state
-    setFiles(prevFiles => [...prevFiles, ...acceptedFiles]);
-    
-    // Call callbacks
-    if (onFilesAdded) {
-      onFilesAdded(acceptedFiles);
-    }
-    
-    // If single file selection is used
-    if (onFileSelect && acceptedFiles.length > 0) {
-      onFileSelect(acceptedFiles[0]);
-    }
-  }, [files.length, maxFiles, onFilesAdded, onFileSelect, toast]);
+      // Limit the number of files if needed
+      const newFiles = [...files, ...validFiles].slice(0, maxFiles);
+      
+      setFiles(newFiles);
+      onFilesAdded(validFiles);
+      
+      // If onFileSelect is provided and there's only one file, call it
+      if (onFileSelect && validFiles.length === 1) {
+        onFileSelect(validFiles[0]);
+      }
+    },
+    [files, maxFiles, maxFileSizeMB, onFilesAdded, onFileSelect]
+  );
 
   const removeFile = (index: number) => {
-    setFiles(files.filter((_, i) => i !== index));
+    const newFiles = [...files];
+    newFiles.splice(index, 1);
+    setFiles(newFiles);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: acceptedTypes,
-    maxFiles,
-    maxSize
+    onDrop: handleDrop,
+    accept: acceptedFileTypes,
   });
 
-  const formatFileSize = (size: number) => {
-    if (size < 1024) return size + ' B';
-    else if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
-    else return (size / (1024 * 1024)).toFixed(1) + ' MB';
-  };
-
   return (
-    <div className={cn("w-full", className)}>
-      <div 
-        {...getRootProps()} 
-        className={cn(
-          "border-2 border-dashed rounded-lg p-6 transition-colors cursor-pointer flex flex-col items-center justify-center",
-          isDragActive 
-            ? "border-primary bg-primary/5" 
-            : "border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"
-        )}
+    <div className={className}>
+      <div
+        {...getRootProps()}
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors duration-300 ${
+          isDragActive
+            ? 'border-primary bg-primary/5'
+            : 'border-muted-foreground/25 hover:border-primary/50'
+        }`}
       >
         <input {...getInputProps()} />
-        <FileUp className={cn("h-10 w-10 mb-3", isDragActive ? "text-primary" : "text-muted-foreground")} />
-        <p className="text-center mb-1 font-medium">
-          {isDragActive ? "Drop files here" : "Drag & drop files here"}
-        </p>
-        <p className="text-center text-sm text-muted-foreground mb-3">
-          or click to select files
-        </p>
-        <Button type="button" size="sm" variant="outline" className="mt-2">
-          <FilePlus className="h-4 w-4 mr-2" />
-          Select Files
-        </Button>
-        <p className="text-xs text-muted-foreground mt-3">
-          Max {maxFiles} {maxFiles === 1 ? 'file' : 'files'}, up to {formatFileSize(maxSize)} each
-        </p>
+        
+        <div className="flex flex-col items-center justify-center space-y-2">
+          {icon || <Upload className="h-8 w-8 text-muted-foreground mb-2" />}
+          
+          <p className="text-lg font-medium">
+            {label || "Drag & drop files here, or click to select files"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {acceptedFileTypes ? 
+              `Supported formats: ${Object.values(acceptedFileTypes).flat().join(', ')}` : 
+              'All file types accepted'}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Maximum file size: {maxFileSizeMB}MB
+          </p>
+          <Button variant="outline" size="sm" className="mt-2">
+            Select Files
+          </Button>
+        </div>
       </div>
 
-      {files.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <p className="text-sm font-medium mb-2">Selected Files:</p>
-          {files.map((file, index) => (
-            <div key={index} className="flex items-center justify-between bg-muted/30 p-2 rounded-lg">
-              <div className="flex items-center overflow-hidden">
-                <div className="bg-primary/10 p-2 rounded-md mr-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{file.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-                </div>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="ml-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => removeFile(index)}
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="sr-only">Remove file</span>
-              </Button>
-            </div>
-          ))}
-        </div>
+      {error && (
+        <motion.div 
+          className="flex items-center gap-2 mt-2 p-2 rounded-md bg-destructive/10 text-destructive text-sm"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+        >
+          <AlertCircle className="h-4 w-4" />
+          {error}
+        </motion.div>
       )}
+
+      <AnimatePresence>
+        {files.length > 0 && (
+          <motion.div 
+            className="mt-4 space-y-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <p className="text-sm font-medium">Selected files:</p>
+            {files.map((file, index) => (
+              <motion.div
+                key={`${file.name}-${index}`}
+                className="flex items-center justify-between p-2 bg-muted rounded-md"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="flex items-center">
+                  <File className="h-4 w-4 mr-2" />
+                  <span className="text-sm truncate max-w-[200px]">{file.name}</span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeFile(index)}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Remove file</span>
+                </Button>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

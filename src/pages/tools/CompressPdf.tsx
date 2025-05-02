@@ -1,379 +1,393 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, FileUp, Download, FileText, ZoomIn, CheckCircle, BarChart3 } from 'lucide-react';
-import FileUploader from '@/components/shared/FileUploader';
-import { compressPdf, downloadFile } from '@/utils/fileProcessing';
+import {
+  FileUp,
+  Download,
+  Settings,
+  FileText,
+  ArrowRight,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import AnimatedPage from '@/components/animation/AnimatedPage';
-import PDFViewer from '@/components/shared/PDFViewer';
 import { motion, AnimatePresence } from 'framer-motion';
-import ToolCard from '@/components/tools/ToolCard';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import FileUploader from '@/components/shared/FileUploader';
+import { readFileAsArrayBuffer, compressPdf } from '@/utils/fileProcessing';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import PDFViewer from '@/components/shared/PDFViewer';
+
+type CompressionLevel = 'low' | 'medium' | 'high';
+
+const CompressionOptions = [
+  { value: 'low', label: 'Low Compression', description: 'Better quality, larger file size' },
+  { value: 'medium', label: 'Medium Compression', description: 'Balanced quality and file size' },
+  { value: 'high', label: 'High Compression', description: 'Smaller file size, lower quality' },
+];
 
 const CompressPdf = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [files, setFiles] = useState<File[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [compressedFile, setCompressedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [resultFile, setResultFile] = useState<File | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [compressionLevel, setCompressionLevel] = useState<'low' | 'medium' | 'high'>('medium');
-  const [compressionStats, setCompressionStats] = useState<{
-    originalSize: string;
-    newSize: string;
-    reduction: string;
-  } | null>(null);
-  
-  // Clear previous results when new files are added
+  const [compressionLevel, setCompressionLevel] = useState<CompressionLevel>('medium');
+  const [beforeSize, setBeforeSize] = useState<number>(0);
+  const [afterSize, setAfterSize] = useState<number>(0);
+  const [reductionPercent, setReductionPercent] = useState<number>(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const { toast } = useToast();
+
   useEffect(() => {
-    if (files.length > 0) {
-      setIsCompleted(false);
-      setResultFile(null);
-      setShowPreview(false);
-      setCompressionStats(null);
+    // Reset progress when user changes the file
+    if (file) {
+      setProgress(0);
+      setCompressedFile(null);
     }
-  }, [files]);
+  }, [file]);
 
   const handleFilesAdded = (newFiles: File[]) => {
-    // Only keep PDF files
-    const pdfFiles = newFiles.filter(file => file.type === 'application/pdf');
-    
-    if (pdfFiles.length === 0) {
+    if (newFiles.length > 0) {
+      const selectedFile = newFiles[0]; // Take only the first file
+      setFile(selectedFile);
+      setBeforeSize(selectedFile.size);
+      
       toast({
-        title: "Invalid file type",
-        description: "Please upload PDF files only.",
-        variant: "destructive",
+        title: "File added",
+        description: `${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB) is ready to compress.`,
       });
-      return;
     }
-    
-    // Only keep the latest file
-    setFiles([pdfFiles[pdfFiles.length - 1]]);
   };
 
   const handleCompress = async () => {
-    if (files.length === 0) {
+    if (!file) {
       toast({
-        title: "No files selected",
-        description: "Please upload a PDF file to compress.",
+        title: "No file selected",
+        description: "Please select a PDF file to compress.",
         variant: "destructive",
       });
       return;
     }
-    
+
     setIsProcessing(true);
     setProgress(0);
-    
+
+    // Simulate progress for better UX
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 95) {
+          clearInterval(progressInterval);
+          return 95;
+        }
+        return prev + 5;
+      });
+    }, 200);
+
     try {
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + Math.random() * 5;
-        });
-      }, 200);
+      const result = await compressPdf(file, compressionLevel);
+      setCompressedFile(result);
       
-      // Pass the compression level to the compress function
-      const compressedFile = await compressPdf(files[0], compressionLevel);
+      // Calculate and set compression statistics
+      const originalSize = file.size;
+      const newSize = result.size;
+      const reduction = originalSize - newSize;
+      const reductionPercentage = (reduction / originalSize) * 100;
       
-      // Set progress to 100% when done
+      setAfterSize(newSize);
+      setReductionPercent(reductionPercentage);
+      
       clearInterval(progressInterval);
       setProgress(100);
       
-      setTimeout(() => {
-        setResultFile(compressedFile);
-        setIsProcessing(false);
-        setIsCompleted(true);
-        
-        const originalSize = (files[0].size / 1024 / 1024).toFixed(2);
-        const newSize = (compressedFile.size / 1024 / 1024).toFixed(2);
-        const reductionPercentage = ((1 - compressedFile.size / files[0].size) * 100).toFixed(0);
-        
-        setCompressionStats({
-          originalSize: `${originalSize}MB`,
-          newSize: `${newSize}MB`,
-          reduction: `${reductionPercentage}%`
-        });
-        
-        toast({
-          title: "Compression Complete",
-          description: `Size reduced from ${originalSize}MB to ${newSize}MB (${reductionPercentage}% smaller)`,
-        });
-      }, 500);
+      toast({
+        title: "Compression complete",
+        description: `Reduced by ${reductionPercentage.toFixed(1)}% (${(reduction / 1024 / 1024).toFixed(2)} MB)`,
+      });
     } catch (error) {
       console.error("Compression error:", error);
+      
       toast({
-        title: "Compression Failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        title: "Compression failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred.",
         variant: "destructive",
       });
+      
+      clearInterval(progressInterval);
+      setProgress(0);
+    } finally {
       setIsProcessing(false);
     }
   };
-  
+
   const handleDownload = () => {
-    if (!resultFile) return;
-    
-    downloadFile(resultFile);
-    
-    toast({
-      title: "Download Started",
-      description: `Your compressed PDF is downloading.`,
-    });
-  };
-  
-  const handleReset = () => {
-    setFiles([]);
-    setIsProcessing(false);
-    setProgress(0);
-    setIsCompleted(false);
-    setResultFile(null);
-    setShowPreview(false);
-    setCompressionStats(null);
+    if (compressedFile) {
+      const url = URL.createObjectURL(compressedFile);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = compressedFile.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download started",
+        description: "Your compressed PDF is downloading.",
+      });
+    }
   };
 
-  const fadeInUpVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  const handleReset = () => {
+    setFile(null);
+    setCompressedFile(null);
+    setProgress(0);
+    setBeforeSize(0);
+    setAfterSize(0);
+    setReductionPercent(0);
+  };
+
+  const formatSize = (bytes: number) => {
+    const mb = bytes / 1024 / 1024;
+    if (mb < 0.01) return "< 0.01 MB";
+    return `${mb.toFixed(2)} MB`;
   };
 
   return (
-    <AnimatedPage animation="scale">
-      <div className="container mx-auto px-4 py-8">
-        <Button 
-          variant="outline" 
-          className="mb-8 hover:scale-105 transition-transform"
-          onClick={() => navigate('/tools')}
+    <>
+      <Navbar />
+      
+      <div className="container mx-auto px-4 py-12">
+        <motion.div 
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Tools
-        </Button>
-        
-        <div className="max-w-3xl mx-auto">
-          <motion.div 
-            className="text-center mb-8"
-            initial="hidden"
-            animate="visible"
-            variants={fadeInUpVariants}
-          >
-            <div className="bg-primary/10 p-3 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <FileUp className="h-8 w-8 text-primary" />
-            </div>
-            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">Compress PDF</h1>
-            <p className="text-muted-foreground">
-              Reduce the size of your PDF files while maintaining quality
-            </p>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Card className="shadow-lg hover:shadow-xl transition-shadow border-primary/10">
-              <CardContent className="p-6">
-                <AnimatePresence mode="wait">
-                  {!isCompleted ? (
-                    <motion.div 
-                      key="upload"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3 }}
+          <div className="inline-block p-3 rounded-full bg-primary/10 mb-4">
+            <FileUp className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold">Compress PDF</h1>
+          <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
+            Reduce the file size of your PDF documents while maintaining quality.
+          </p>
+        </motion.div>
+
+        <div className="max-w-4xl mx-auto">
+          <Card className="shadow-lg border-0 overflow-hidden">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <FileText className="mr-2 h-5 w-5 text-primary" />
+                {!compressedFile ? "Upload PDF to Compress" : "Compression Complete"}
+              </h2>
+
+              {!compressedFile ? (
+                <>
+                  <FileUploader
+                    acceptedFileTypes={{
+                      'application/pdf': ['.pdf']
+                    }}
+                    maxFiles={1}
+                    onFilesAdded={handleFilesAdded}
+                    maxFileSizeMB={100}
+                  />
+
+                  <div className="mt-6">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center mb-4"
+                      onClick={() => setShowSettings(!showSettings)}
                     >
-                      <FileUploader 
-                        accept={{ 'application/pdf': ['.pdf'] }}
-                        maxFiles={1}
-                        onFilesAdded={handleFilesAdded}
-                        className="mb-6 border-dashed border-2 border-primary/50 hover:border-primary transition-colors p-8"
-                        label="Drop your PDF file here or click to browse"
-                        icon={<FileUp size={40} className="text-primary/50" />}
-                      />
-                      
-                      {files.length > 0 && (
+                      <Settings className="h-4 w-4 mr-2" />
+                      Compression Settings
+                      {showSettings ? (
+                        <ChevronUp className="h-4 w-4 ml-2" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 ml-2" />
+                      )}
+                    </Button>
+                    
+                    <AnimatePresence>
+                      {showSettings && (
                         <motion.div 
-                          className="space-y-4"
+                          className="p-4 bg-muted/40 rounded-md mb-4"
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
-                          transition={{ duration: 0.3 }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
                         >
-                          <div className="flex items-center justify-between mb-2 p-3 bg-secondary/10 rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <FileText size={18} className="text-primary" />
-                              <p className="font-medium text-sm truncate max-w-[200px]">{files[0].name}</p>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {(files[0].size / 1024 / 1024).toFixed(2)} MB
-                            </p>
-                          </div>
-                          
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 mb-2">
-                                <BarChart3 size={18} className="text-primary" />
-                                <p className="text-sm font-medium">Select compression level:</p>
-                              </div>
-                              <div className="flex gap-2">
-                                {['low', 'medium', 'high'].map((level) => (
-                                  <Button
-                                    key={level}
-                                    type="button"
-                                    variant={compressionLevel === level ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => setCompressionLevel(level as 'low' | 'medium' | 'high')}
-                                    className={`flex-1 capitalize ${compressionLevel === level ? 'bg-primary text-primary-foreground' : ''}`}
-                                  >
-                                    {level === 'low' ? 'Less' : level === 'medium' ? 'Balanced' : 'Maximum'}
-                                  </Button>
+                          <div className="mb-2 text-sm font-medium">Compression Level</div>
+                          <Select 
+                            value={compressionLevel} 
+                            onValueChange={(value) => setCompressionLevel(value as CompressionLevel)}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select compression level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {CompressionOptions.map(option => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    <div>
+                                      <div>{option.label}</div>
+                                      <div className="text-xs text-muted-foreground">{option.description}</div>
+                                    </div>
+                                  </SelectItem>
                                 ))}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {compressionLevel === 'low' 
-                                  ? 'Better quality, less compression' 
-                                  : compressionLevel === 'medium'
-                                  ? 'Balanced quality and compression'
-                                  : 'Maximum compression, lower quality'}
-                              </p>
-                            </div>
-                            
-                            {isProcessing ? (
-                              <motion.div 
-                                className="space-y-2 p-6"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                              >
-                                <p className="text-center font-medium">Compressing file...</p>
-                                <Progress value={progress} className="h-2" />
-                                <p className="text-center text-sm text-muted-foreground">
-                                  {progress === 100 ? 'Finalizing...' : `${Math.round(progress)}%`}
-                                </p>
-                              </motion.div>
-                            ) : (
-                              <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                              >
-                                <Button 
-                                  className="w-full bg-gradient-to-r from-primary to-purple-500 hover:opacity-90 transition-opacity" 
-                                  onClick={handleCompress}
-                                >
-                                  Compress PDF
-                                </Button>
-                              </motion.div>
-                            )}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                          
+                          <div className="mt-4 text-xs text-muted-foreground">
+                            <p><strong>Low:</strong> Minimal compression, better for documents with high-quality images.</p>
+                            <p><strong>Medium:</strong> Balanced compression, suitable for most documents.</p>
+                            <p><strong>High:</strong> Maximum compression, may reduce image quality.</p>
                           </div>
                         </motion.div>
                       )}
-                    </motion.div>
-                  ) : (
-                    <motion.div 
-                      key="result"
-                      className="space-y-4"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3 }}
+                    </AnimatePresence>
+
+                    <Button 
+                      onClick={handleCompress} 
+                      disabled={!file || isProcessing}
+                      className="w-full bg-gradient-to-r from-primary to-purple-500 hover:opacity-90 transition-opacity"
                     >
-                      <motion.div 
-                        className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg text-center"
-                        initial={{ scale: 0.9 }}
-                        animate={{ scale: 1 }}
-                        transition={{ duration: 0.3, delay: 0.2 }}
-                      >
-                        <motion.div
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ delay: 0.2, duration: 0.5 }}
-                          className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center mx-auto mb-4"
-                        >
-                          <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
-                        </motion.div>
-                        <h3 className="font-medium text-lg mb-2">Compression Complete!</h3>
-                        
-                        {compressionStats && (
-                          <div className="flex justify-center gap-6 mt-4">
-                            <div className="text-center">
-                              <p className="text-xs text-muted-foreground">Original size</p>
-                              <p className="font-semibold">{compressionStats.originalSize}</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xs text-muted-foreground">Compressed size</p>
-                              <p className="font-semibold">{compressionStats.newSize}</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xs text-muted-foreground">Reduction</p>
-                              <p className="font-semibold text-green-600 dark:text-green-400">
-                                {compressionStats.reduction}
-                              </p>
-                            </div>
+                      {isProcessing ? (
+                        <div className="flex items-center">
+                          <div className="mr-2">Compressing</div>
+                          <div className="flex space-x-1">
+                            <span className="h-2 w-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                            <span className="h-2 w-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                            <span className="h-2 w-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                           </div>
-                        )}
-                      </motion.div>
-                      
-                      <motion.div 
-                        className="flex flex-col gap-4"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.4 }}
-                      >
-                        <Button
-                          className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transition-all hover:scale-105 transform"
-                          onClick={handleDownload}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download Compressed PDF
-                        </Button>
-                        
-                        <Button
-                          variant="outline"
-                          className="w-full hover:bg-primary/10 transition-colors"
-                          onClick={() => setShowPreview(!showPreview)}
-                        >
-                          <ZoomIn className="h-4 w-4 mr-2" />
-                          {showPreview ? "Hide Preview" : "Preview Result"}
-                        </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          className="w-full hover:bg-primary/5 transition-colors"
-                          onClick={handleReset}
-                        >
-                          Compress Another File
-                        </Button>
-                      </motion.div>
-                      
-                      <AnimatePresence>
-                        {showPreview && resultFile && (
-                          <motion.div 
-                            className="mt-4 border rounded-lg overflow-hidden"
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.5 }}
+                        </div>
+                      ) : (
+                        <>
+                          Compress PDF
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+
+                    {isProcessing && (
+                      <div className="mt-4">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span>Compressing...</span>
+                          <span>{progress}%</span>
+                        </div>
+                        <Progress value={progress} className="h-2" />
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-6">
+                  <motion.div
+                    className="bg-muted/30 p-4 rounded-md grid grid-cols-3 gap-4 text-center"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <div>
+                      <div className="text-sm text-muted-foreground">Original Size</div>
+                      <div className="text-xl font-bold">{formatSize(beforeSize)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">New Size</div>
+                      <div className="text-xl font-bold">{formatSize(afterSize)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Reduction</div>
+                      <div className="text-xl font-bold text-green-500">{reductionPercent.toFixed(1)}%</div>
+                    </div>
+                  </motion.div>
+                  
+                  <Tabs defaultValue="preview">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="preview">Preview Result</TabsTrigger>
+                      <TabsTrigger value="download">Download</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="preview" className="mt-4">
+                      <div className="border rounded-lg overflow-hidden">
+                        <PDFViewer file={compressedFile} className="h-[400px]" />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="download" className="mt-4">
+                      <div className="text-center p-6 space-y-4">
+                        <motion.div whileHover={{ scale: 1.05 }}>
+                          <Button 
+                            onClick={handleDownload}
+                            className="w-full h-16 text-lg bg-primary hover:bg-primary/90"
                           >
-                            <div className="h-[400px]">
-                              <PDFViewer file={resultFile} className="max-h-[400px]" />
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </CardContent>
-            </Card>
+                            <Download className="mr-2 h-5 w-5" />
+                            Download Compressed PDF
+                          </Button>
+                        </motion.div>
+                        
+                        <p className="text-sm text-muted-foreground">
+                          Your compressed file is ready! Click the button above to download.
+                        </p>
+                        
+                        <div className="pt-4">
+                          <Button
+                            variant="outline"
+                            onClick={handleReset}
+                          >
+                            Compress Another PDF
+                          </Button>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <motion.div 
+            className="mt-12"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <h3 className="text-xl font-semibold mb-4">Tips for PDF Compression</h3>
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="p-4 hover:shadow-md transition-shadow">
+                <h4 className="font-medium mb-2">Choose the Right Level</h4>
+                <p className="text-sm text-muted-foreground">
+                  Use lower compression for documents with important images and higher compression for text-heavy documents.
+                </p>
+              </Card>
+              <Card className="p-4 hover:shadow-md transition-shadow">
+                <h4 className="font-medium mb-2">Check Quality After Compression</h4>
+                <p className="text-sm text-muted-foreground">
+                  Always verify important details in your compressed PDF before sharing it.
+                </p>
+              </Card>
+              <Card className="p-4 hover:shadow-md transition-shadow">
+                <h4 className="font-medium mb-2">Optimize Original Files</h4>
+                <p className="text-sm text-muted-foreground">
+                  For best results, optimize images before creating PDFs to achieve smaller file sizes.
+                </p>
+              </Card>
+            </div>
           </motion.div>
         </div>
       </div>
-    </AnimatedPage>
+      
+      <Footer />
+    </>
   );
 };
 

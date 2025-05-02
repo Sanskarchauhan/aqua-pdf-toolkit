@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Pencil, FileText, Download, Save } from 'lucide-react';
+import { FileMinus, FileText, Download } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import FileUploader from '@/components/shared/FileUploader';
@@ -13,22 +13,26 @@ import { processFile } from '@/utils/fileProcessing';
 import { useAuth } from '@/contexts/AuthContext';
 import PremiumModal from '@/components/shared/PremiumModal';
 import { motion } from 'framer-motion';
+import PDFViewer from '@/components/shared/PDFViewer';
 
-const EditPdf = () => {
+const DeletePages = () => {
   const [file, setFile] = useState<File | null>(null);
   const [resultFile, setResultFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAuthenticated, hasAvailableTrials, increaseTrialCount } = useAuth();
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
-    setResultFile(null); // Reset result when new file is selected
+    setResultFile(null);
+    setSelectedPages([]);
   };
 
-  const handleSaveEdits = async (edits: Array<{type: string, content: string, page: number, x: number, y: number}>) => {
+  const handleDeletePages = async (pageNumbers: number[]) => {
     if (!file) {
       toast({
         title: "No file selected",
@@ -45,7 +49,7 @@ const EditPdf = () => {
         description: "Please sign in to use this feature.",
         variant: "destructive",
       });
-      navigate('/login', { state: { from: '/tools/edit-pdf' } });
+      navigate('/login', { state: { from: '/tools/delete-pages' } });
       return;
     }
 
@@ -55,74 +59,25 @@ const EditPdf = () => {
     }
 
     setIsProcessing(true);
+    setSelectedPages(pageNumbers);
     
     try {
       // Increase trial count - only counts if user is not subscribed
       increaseTrialCount();
       
-      // Process the file with edits
-      const result = await processFile('edit-pdf', [file], { edits });
-      setResultFile(result);
-      
-      toast({
-        title: "PDF Successfully Edited",
-        description: "Your PDF has been updated with your edits.",
-      });
-    } catch (error) {
-      console.error('Edit error:', error);
-      toast({
-        title: "Edit failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleDeletePages = async (pageNumbers: number[]) => {
-    try {
-      if (!file || !isAuthenticated || !hasAvailableTrials) return;
-      
-      setIsProcessing(true);
-      increaseTrialCount();
-      
+      // Process the file to delete pages
       const result = await processFile('delete-pages', [file], { pages: pageNumbers });
-      setFile(result); // Update the current file with pages deleted
-      
-      toast({
-        title: "Pages Deleted",
-        description: `${pageNumbers.length} page(s) successfully deleted.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to delete pages",
-        description: "An error occurred while deleting the pages.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleExtractPages = async (pageNumbers: number[]) => {
-    try {
-      if (!file || !isAuthenticated || !hasAvailableTrials) return;
-      
-      setIsProcessing(true);
-      increaseTrialCount();
-      
-      const result = await processFile('extract-pages', [file], { pages: pageNumbers });
       setResultFile(result);
       
       toast({
-        title: "Pages Extracted",
-        description: `${pageNumbers.length} page(s) successfully extracted.`,
+        title: "Pages Successfully Deleted",
+        description: `${pageNumbers.length} page(s) have been removed from your PDF.`,
       });
     } catch (error) {
+      console.error('Delete pages error:', error);
       toast({
-        title: "Failed to extract pages",
-        description: "An error occurred while extracting the pages.",
+        title: "Operation failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -160,11 +115,11 @@ const EditPdf = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="inline-block p-3 rounded-full bg-primary/10 mb-4">
-            <Pencil className="h-8 w-8 text-primary" />
+            <FileMinus className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold">Edit PDF</h1>
+          <h1 className="text-3xl font-bold">Delete PDF Pages</h1>
           <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">
-            Add text, annotations, delete or extract pages from your PDF documents.
+            Remove unwanted pages from your PDF documents with ease.
           </p>
         </motion.div>
 
@@ -174,45 +129,59 @@ const EditPdf = () => {
               <div>
                 <h2 className="text-xl font-semibold mb-3 flex items-center">
                   <FileText className="mr-2 h-5 w-5 text-primary" />
-                  Upload PDF to Edit
+                  Upload PDF
                 </h2>
                 <FileUploader 
-                  onFileSelect={handleFileSelect}
                   acceptedFileTypes={{
                     'application/pdf': ['.pdf']
                   }}
-                  maxFileSizeMB={10}
+                  maxFiles={1}
+                  onFilesAdded={(files) => handleFileSelect(files[0])}
                 />
               </div>
 
               {resultFile && (
-                <Button 
-                  onClick={handleDownload}
-                  className="w-full"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Edited PDF
-                </Button>
+                <div className="space-y-4">
+                  <Button 
+                    onClick={handleDownload}
+                    className="w-full"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Modified PDF
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="w-full"
+                  >
+                    {showPreview ? 'Hide Preview' : 'Show Preview'}
+                  </Button>
+                  
+                  {showPreview && (
+                    <div className="border rounded-md overflow-hidden">
+                      <PDFViewer file={resultFile} className="max-h-[500px]" />
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </Card>
 
-          {file && (
+          {file && !resultFile && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <Card className="p-6 border shadow-sm">
-                <h2 className="text-xl font-semibold mb-4">PDF Editor</h2>
+                <h2 className="text-xl font-semibold mb-4">Select Pages to Delete</h2>
                 <div className="mb-4 text-muted-foreground text-sm">
-                  Use the tools below to edit your PDF. You can add text, delete pages, or extract specific pages.
+                  Use the tools below to select and remove pages from your PDF.
                 </div>
                 <PDFEditor 
                   file={file}
-                  onSave={handleSaveEdits} 
                   onDeletePages={handleDeletePages}
-                  onExtractPages={handleExtractPages}
                 />
                 {isProcessing && (
                   <div className="mt-4 p-4 bg-background border rounded-md flex items-center justify-center">
@@ -236,4 +205,4 @@ const EditPdf = () => {
   );
 };
 
-export default EditPdf;
+export default DeletePages;
