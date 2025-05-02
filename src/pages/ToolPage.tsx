@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -37,7 +38,7 @@ const ToolPage = () => {
   const { toolId } = useParams<{ toolId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, increaseTrialCount, hasAvailableTrials } = useAuth();
+  const { user, increaseTrialCount, hasAvailableTrials, isAuthenticated } = useAuth();
   
   const [files, setFiles] = useState<File[]>([]);
   const [processing, setProcessing] = useState<boolean>(false);
@@ -51,6 +52,7 @@ const ToolPage = () => {
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [edits, setEdits] = useState<Array<{type: string, content: string, page: number, x: number, y: number}>>([]);
   const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState<boolean>(false);
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -134,10 +136,20 @@ const ToolPage = () => {
       return;
     }
     
-    // Check for premium access
-    if (toolInfo?.isPremium && !hasAvailableTrials) {
-      setShowPremiumModal(true);
-      return;
+    // Modified: Check for premium features but don't require login for basic features
+    if (toolInfo?.isPremium) {
+      if (!isAuthenticated) {
+        // Inform user they need to login for premium features
+        toast({
+          title: "Premium Feature",
+          description: "This is a premium feature. You can use basic features without logging in.",
+        });
+        setShowLoginPrompt(true);
+        return;
+      } else if (!hasAvailableTrials) {
+        setShowPremiumModal(true);
+        return;
+      }
     }
     
     if (toolInfo?.requiresPassword && !password) {
@@ -145,8 +157,8 @@ const ToolPage = () => {
       return;
     }
     
-    // Increment trial count for non-subscribed users
-    if (!user?.isSubscribed) {
+    // Increment trial count only for authenticated non-subscribed users
+    if (isAuthenticated && user && !user.isSubscribed) {
       increaseTrialCount();
     }
     
@@ -472,6 +484,32 @@ const ToolPage = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Show login prompt for premium features if not authenticated */}
+        {showLoginPrompt && (
+          <div className="mb-6 p-4 border border-primary/20 bg-primary/5 rounded-lg">
+            <p className="flex items-center text-sm">
+              <Lock className="h-4 w-4 mr-2 text-primary" />
+              This is a premium feature. 
+              <Button 
+                variant="link" 
+                onClick={() => navigate('/login')} 
+                className="px-2 h-auto"
+              >
+                Sign in
+              </Button> 
+              or 
+              <Button 
+                variant="link" 
+                onClick={() => navigate('/signup')} 
+                className="px-2 h-auto"
+              >
+                create an account
+              </Button> 
+              to continue.
+            </p>
+          </div>
+        )}
         
         <ToolCard
           toolId={toolId || ''}
@@ -511,7 +549,8 @@ const ToolPage = () => {
             </motion.div>
           )}
           
-          {user && !user.isSubscribed && (
+          {/* Only show trial information for authenticated users */}
+          {isAuthenticated && user && !user.isSubscribed && (
             <motion.div 
               className="mt-4 text-center text-sm text-muted-foreground"
               initial={{ opacity: 0 }}

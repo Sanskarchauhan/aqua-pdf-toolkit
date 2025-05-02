@@ -84,24 +84,11 @@ const AnimatedRoutes = () => {
           <Route path="/" element={<Index />} />
           <Route path="/tools" element={<Tools />} />
           
-          <Route path="/tools/:toolId" element={
-            <ProtectedRoute>
-              <ToolPage />
-            </ProtectedRoute>
-          } />
-          
+          {/* Changed: No longer protected routes */}
+          <Route path="/tools/:toolId" element={<ToolPage />} />
           <Route path="/tool/:toolId" element={<Navigate to={`/tools/${location.pathname.substring(6)}`} replace />} />
-          
-          <Route path="/tools/edit-pdf" element={
-            <ProtectedRoute>
-              <EditPdf />
-            </ProtectedRoute>
-          } />
-          <Route path="/tools/pdf-ocr" element={
-            <ProtectedRoute>
-              <PdfOcr />
-            </ProtectedRoute>
-          } />
+          <Route path="/tools/edit-pdf" element={<EditPdf />} />
+          <Route path="/tools/pdf-ocr" element={<PdfOcr />} />
           
           <Route path="/workspace" element={
             <ProtectedRoute>
