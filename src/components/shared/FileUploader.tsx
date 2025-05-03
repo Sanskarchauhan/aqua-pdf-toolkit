@@ -2,7 +2,7 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
-import { X, Upload, File, AlertCircle, Queue } from 'lucide-react';
+import { X, Upload, File, AlertCircle, ListPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface FileUploaderProps {
@@ -165,7 +165,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
                   disabled={processingQueue}
                   className="flex items-center gap-1 text-xs"
                 >
-                  <Queue className="h-4 w-4" />
+                  <ListPlus className="h-4 w-4" />
                   Process Queue ({fileQueue.length})
                 </Button>
               )}

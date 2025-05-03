@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import AnimatedButton from '@/components/animation/AnimatedButton';
 import {
   ArrowLeft, Download, FileText, FileUp, Layers, 
-  ScanLine, Pencil, Lock, Unlock, Camera, FileSignature
+  ScanLine, Pencil, Lock, Unlock, Camera, FileSignature, ListPlus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ToolDebug from '@/components/debug/ToolDebug';
@@ -576,7 +576,7 @@ const ToolPage = () => {
               animate={{ opacity: 1, y: 0 }}
             >
               <p className="flex items-center">
-                <Queue className="h-4 w-4 mr-2 text-primary" />
+                <ListPlus className="h-4 w-4 mr-2 text-primary" />
                 <span>
                   <strong>{files.length}</strong> images are ready to be converted. 
                   Click the "Process" button to convert them all to a single PDF.
