@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -523,7 +522,7 @@ const ToolPage = () => {
           onReset={handleReset}
         >
           <FileUploader
-            accept={toolInfo?.acceptedFormats}
+            acceptedFileTypes={toolInfo?.acceptedFormats}
             maxFiles={toolInfo?.maxFiles || 1}
             onFilesAdded={handleFilesAdded}
             className="mb-4"

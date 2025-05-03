@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -115,7 +114,7 @@ const Workspace = () => {
             </CardHeader>
             <CardContent>
               <FileUploader
-                accept={{
+                acceptedFileTypes={{
                   'application/pdf': ['.pdf'],
                   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
                   'application/msword': ['.doc'],
