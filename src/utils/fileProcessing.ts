@@ -518,12 +518,21 @@ export const pdfToJpg = async (file: File): Promise<File> => {
   }
 };
 
-// JPG to PDF
+// JPG to PDF with improved queue processing
 export const jpgToPdf = async (files: File[]): Promise<File> => {
   try {
     const pdfDoc = await PDFDocument.create();
     
-    for (const file of files) {
+    // Sort files by name to maintain order
+    const sortedFiles = [...files].sort((a, b) => a.name.localeCompare(b.name));
+    
+    console.log(`Processing ${sortedFiles.length} images in queue`);
+    
+    // Process each image one by one
+    for (let i = 0; i < sortedFiles.length; i++) {
+      const file = sortedFiles[i];
+      console.log(`Processing image ${i + 1}/${sortedFiles.length}: ${file.name}`);
+      
       // Read the image
       const imageBytes = await readFileAsArrayBuffer(file);
       
@@ -534,24 +543,64 @@ export const jpgToPdf = async (files: File[]): Promise<File> => {
       } else if (file.type === 'image/png') {
         image = await pdfDoc.embedPng(new Uint8Array(imageBytes));
       } else {
+        console.log(`Skipping unsupported file type: ${file.type}`);
         continue; // Skip unsupported image types
       }
       
+      // Calculate the best page dimensions based on image aspect ratio
+      const imgWidth = image.width;
+      const imgHeight = image.height;
+      
+      // Standard page sizes
+      const pageWidth = imgWidth > imgHeight ? 842 : 595; // A4 landscape or portrait
+      const pageHeight = imgWidth > imgHeight ? 595 : 842;
+      
+      // Calculate scaling to fit the page with margins
+      const margin = 40;
+      const availableWidth = pageWidth - (margin * 2);
+      const availableHeight = pageHeight - (margin * 2);
+      
+      const widthScale = availableWidth / imgWidth;
+      const heightScale = availableHeight / imgHeight;
+      const scale = Math.min(widthScale, heightScale);
+      
+      const scaledWidth = imgWidth * scale;
+      const scaledHeight = imgHeight * scale;
+      
+      // Center the image on the page
+      const x = (pageWidth - scaledWidth) / 2;
+      const y = (pageHeight - scaledHeight) / 2;
+      
       // Add page with image
-      const page = pdfDoc.addPage([image.width, image.height]);
+      const page = pdfDoc.addPage([pageWidth, pageHeight]);
       page.drawImage(image, {
-        x: 0,
-        y: 0,
-        width: image.width,
-        height: image.height,
+        x,
+        y,
+        width: scaledWidth,
+        height: scaledHeight,
       });
+      
+      // Optional: Add file name as caption at the bottom of the page
+      if (files.length > 1) {
+        const fontSize = 10;
+        const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        page.drawText(`${i + 1}. ${file.name}`, {
+          x: margin,
+          y: margin / 2,
+          size: fontSize,
+          font: helveticaFont,
+          color: rgb(0.3, 0.3, 0.3),
+        });
+      }
     }
+    
+    console.log("All images processed, creating PDF");
     
     const pdfBytes = await pdfDoc.save();
     return createResultFile(pdfBytes, 'jpg-to-pdf', 'images-to-pdf.pdf');
   } catch (error) {
     console.error('Error converting JPG to PDF:', error);
-    throw new Error('Failed to convert JPG to PDF');
+    throw new Error('Failed to convert images to PDF');
   }
 };
 

@@ -2,7 +2,7 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
-import { X, Upload, File, AlertCircle } from 'lucide-react';
+import { X, Upload, File, AlertCircle, Queue } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface FileUploaderProps {
@@ -14,6 +14,7 @@ export interface FileUploaderProps {
   className?: string;
   label?: string;
   icon?: React.ReactNode;
+  queueMode?: boolean;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
@@ -25,9 +26,12 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   className = '',
   label,
   icon,
+  queueMode = false,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [fileQueue, setFileQueue] = useState<File[]>([]);
+  const [processingQueue, setProcessingQueue] = useState<boolean>(false);
 
   const handleDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -45,24 +49,53 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
       if (validFiles.length === 0) return;
 
-      // Limit the number of files if needed
-      const newFiles = [...files, ...validFiles].slice(0, maxFiles);
-      
-      setFiles(newFiles);
-      onFilesAdded(validFiles);
-      
-      // If onFileSelect is provided and there's only one file, call it
-      if (onFileSelect && validFiles.length === 1) {
-        onFileSelect(validFiles[0]);
+      if (queueMode) {
+        // In queue mode, add to the queue instead of processing immediately
+        const newQueue = [...fileQueue, ...validFiles];
+        setFileQueue(newQueue);
+        
+        // Update the displayed files
+        const newFiles = [...files, ...validFiles].slice(0, maxFiles);
+        setFiles(newFiles);
+      } else {
+        // Normal mode - process files immediately
+        const newFiles = [...files, ...validFiles].slice(0, maxFiles);
+        setFiles(newFiles);
+        onFilesAdded(validFiles);
+        
+        // If onFileSelect is provided and there's only one file, call it
+        if (onFileSelect && validFiles.length === 1) {
+          onFileSelect(validFiles[0]);
+        }
       }
     },
-    [files, maxFiles, maxFileSizeMB, onFilesAdded, onFileSelect]
+    [files, fileQueue, maxFiles, maxFileSizeMB, onFilesAdded, onFileSelect, queueMode]
   );
 
   const removeFile = (index: number) => {
     const newFiles = [...files];
     newFiles.splice(index, 1);
     setFiles(newFiles);
+    
+    // Also remove from queue if in queue mode
+    if (queueMode) {
+      const newQueue = [...fileQueue];
+      newQueue.splice(index, 1);
+      setFileQueue(newQueue);
+    }
+  };
+
+  const processQueue = () => {
+    if (fileQueue.length === 0 || processingQueue) return;
+    
+    setProcessingQueue(true);
+    
+    // Process the files in the queue
+    onFilesAdded(fileQueue);
+    
+    // Clear the queue
+    setFileQueue([]);
+    setProcessingQueue(false);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -122,7 +155,22 @@ const FileUploader: React.FC<FileUploaderProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <p className="text-sm font-medium">Selected files:</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Selected files: ({files.length})</p>
+              {queueMode && fileQueue.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={processQueue}
+                  disabled={processingQueue}
+                  className="flex items-center gap-1 text-xs"
+                >
+                  <Queue className="h-4 w-4" />
+                  Process Queue ({fileQueue.length})
+                </Button>
+              )}
+            </div>
+            
             {files.map((file, index) => (
               <motion.div
                 key={`${file.name}-${index}`}

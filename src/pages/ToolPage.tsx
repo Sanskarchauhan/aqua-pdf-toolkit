@@ -71,13 +71,29 @@ const ToolPage = () => {
   }, [showDebug, toast]);
   
   const handleFilesAdded = (newFiles: File[]) => {
+    // Check if we're in jpg-to-pdf tool for queue processing
+    const isJpgToPdf = toolId === 'jpg-to-pdf';
+    
     setTimeout(() => {
       setFiles(prevFiles => {
-        const updatedFiles = [...prevFiles, ...newFiles];
+        // For jpg-to-pdf we want to accumulate files for batch processing
+        const updatedFiles = isJpgToPdf 
+          ? [...prevFiles, ...newFiles]
+          : [...prevFiles, ...newFiles];
+        
         toast({
           title: "Files added successfully",
           description: `${newFiles.length} ${newFiles.length === 1 ? 'file' : 'files'} added.`,
         });
+        
+        // For jpg-to-pdf, we have a special message about queue processing
+        if (isJpgToPdf && updatedFiles.length > 1) {
+          toast({
+            title: "Multiple images added",
+            description: "Click 'Process' when you're ready to convert all images to PDF.",
+          });
+        }
+        
         return updatedFiles;
       });
     }, 0);
@@ -441,6 +457,9 @@ const ToolPage = () => {
     return <Icon className="h-6 w-6 text-primary" />;
   };
   
+  // Check if the current tool is jpg-to-pdf for queue mode
+  const isQueueModeEnabled = toolId === 'jpg-to-pdf';
+  
   return (
     <AnimatedPage>
       <Navbar />
@@ -526,6 +545,7 @@ const ToolPage = () => {
             maxFiles={toolInfo?.maxFiles || 1}
             onFilesAdded={handleFilesAdded}
             className="mb-4"
+            queueMode={isQueueModeEnabled}
           />
           
           {files.length > 0 && files[0].type.includes('pdf') && !processing && (
@@ -545,6 +565,23 @@ const ToolPage = () => {
               ) : (
                 <PDFViewer file={files[0]} className="max-h-[400px]" />
               )}
+            </motion.div>
+          )}
+          
+          {/* Special instructions for jpg-to-pdf */}
+          {isQueueModeEnabled && files.length > 0 && (
+            <motion.div
+              className="mt-4 p-3 bg-primary/10 rounded-md text-sm"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <p className="flex items-center">
+                <Queue className="h-4 w-4 mr-2 text-primary" />
+                <span>
+                  <strong>{files.length}</strong> images are ready to be converted. 
+                  Click the "Process" button to convert them all to a single PDF.
+                </span>
+              </p>
             </motion.div>
           )}
           
