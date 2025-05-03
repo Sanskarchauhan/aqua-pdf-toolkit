@@ -165,7 +165,7 @@ const Tools = () => {
             <AnimatedCard key={tool.id} delay={index * 0.05}>
               <div 
                 className="p-6 rounded-xl border bg-card transition-all cursor-pointer hover:shadow-md"
-                onClick={() => navigate(`/tool/${tool.id}`)}
+                onClick={() => navigate(`/tools/${tool.id}`)}
               >
                 <div className={`${tool.color} p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4`}>
                   <tool.icon className="h-6 w-6" />
