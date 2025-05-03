@@ -26,6 +26,12 @@ const PdfOcr = () => {
     setFile(selectedFile);
     setResultFile(null); // Reset result when new file is selected
   };
+  
+  const handleFilesAdded = (files: File[]) => {
+    if (files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
 
   const handleProcess = async () => {
     if (!file) {
@@ -122,6 +128,7 @@ const PdfOcr = () => {
                 </h2>
                 <FileUploader 
                   onFileSelect={handleFileSelect}
+                  onFilesAdded={handleFilesAdded}
                   acceptedFileTypes={{
                     'application/pdf': ['.pdf']
                   }}

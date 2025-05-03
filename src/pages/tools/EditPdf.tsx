@@ -28,6 +28,12 @@ const EditPdf = () => {
     setResultFile(null); // Reset result when new file is selected
   };
 
+  const handleFilesAdded = (files: File[]) => {
+    if (files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
+
   const handleSaveEdits = async (edits: Array<{type: string, content: string, page: number, x: number, y: number}>) => {
     if (!file) {
       toast({
@@ -151,7 +157,6 @@ const EditPdf = () => {
   return (
     <>
       <Navbar />
-
       <div className="container mx-auto px-4 py-10">
         <motion.div 
           className="text-center mb-8"
@@ -178,6 +183,7 @@ const EditPdf = () => {
                 </h2>
                 <FileUploader 
                   onFileSelect={handleFileSelect}
+                  onFilesAdded={handleFilesAdded}
                   acceptedFileTypes={{
                     'application/pdf': ['.pdf']
                   }}
