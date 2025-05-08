@@ -31,6 +31,7 @@ interface ToolInfo {
   requiresPassword?: boolean;
   isEditTool?: boolean;
   isPremium?: boolean;
+  showPreview?: boolean; // New property to control preview visibility
 }
 
 const ToolPage = () => {
@@ -269,6 +270,7 @@ const ToolPage = () => {
       icon: FileUp,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 5,
+      showPreview: true, // Show preview for this tool
     },
     'merge-pdf': {
       id: 'merge-pdf',
@@ -277,6 +279,7 @@ const ToolPage = () => {
       icon: Layers,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 20,
+      showPreview: true,
     },
     'pdf-to-word': {
       id: 'pdf-to-word',
@@ -286,6 +289,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 3,
       isPremium: true,
+      showPreview: false, // No preview needed for conversion tools
     },
     'word-to-pdf': {
       id: 'word-to-pdf',
@@ -297,6 +301,7 @@ const ToolPage = () => {
         'application/msword': ['.doc'] 
       },
       maxFiles: 3,
+      showPreview: true, // Show PDF preview after conversion
     },
     'pdf-to-excel': {
       id: 'pdf-to-excel',
@@ -306,6 +311,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       isPremium: true,
+      showPreview: false,
     },
     'excel-to-pdf': {
       id: 'excel-to-pdf',
@@ -317,6 +323,7 @@ const ToolPage = () => {
         'application/vnd.ms-excel': ['.xls'] 
       },
       maxFiles: 3,
+      showPreview: true,
     },
     'pdf-to-jpg': {
       id: 'pdf-to-jpg',
@@ -325,6 +332,7 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
+      showPreview: false,
     },
     'jpg-to-pdf': {
       id: 'jpg-to-pdf',
@@ -333,6 +341,7 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 20,
+      showPreview: true,
     },
     'pdf-to-ppt': {
       id: 'pdf-to-ppt',
@@ -342,6 +351,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       isPremium: true,
+      showPreview: false,
     },
     'ppt-to-pdf': {
       id: 'ppt-to-pdf',
@@ -353,6 +363,7 @@ const ToolPage = () => {
         'application/vnd.ms-powerpoint': ['.ppt'] 
       },
       maxFiles: 3,
+      showPreview: true,
     },
     'split-pdf': {
       id: 'split-pdf',
@@ -361,6 +372,7 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
+      showPreview: false,
     },
     'rotate-pdf': {
       id: 'rotate-pdf',
@@ -369,6 +381,7 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
+      showPreview: true,
     },
     'pdf-ocr': {
       id: 'pdf-ocr',
@@ -378,6 +391,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 2,
       isPremium: true,
+      showPreview: false,
     },
     'edit-pdf': {
       id: 'edit-pdf',
@@ -388,6 +402,7 @@ const ToolPage = () => {
       maxFiles: 1,
       isEditTool: true,
       isPremium: true,
+      showPreview: true,
     },
     'unlock-pdf': {
       id: 'unlock-pdf',
@@ -397,6 +412,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       requiresPassword: true,
+      showPreview: false,
     },
     'protect-pdf': {
       id: 'protect-pdf',
@@ -406,6 +422,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       requiresPassword: true,
+      showPreview: false,
     },
     'pdf-scanner': {
       id: 'pdf-scanner',
@@ -415,6 +432,7 @@ const ToolPage = () => {
       acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 10,
       isPremium: true,
+      showPreview: true,
     },
     'delete-pages': {
       id: 'delete-pages',
@@ -424,6 +442,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       isEditTool: true,
+      showPreview: true,
     },
     'extract-pages': {
       id: 'extract-pages',
@@ -433,6 +452,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       isEditTool: true,
+      showPreview: true,
     },
   };
   
@@ -539,6 +559,7 @@ const ToolPage = () => {
           onProcess={handleProcess}
           onDownload={handleDownload}
           onReset={handleReset}
+          showPreview={toolInfo.showPreview !== false} // Pass the preview flag to ToolCard
         >
           <FileUploader
             acceptedFileTypes={toolInfo?.acceptedFormats}

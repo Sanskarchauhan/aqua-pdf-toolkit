@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -313,16 +312,11 @@ const CompressPdf = () => {
                     </div>
                   </motion.div>
                   
-                  <Tabs defaultValue="preview">
+                  <Tabs defaultValue="download">
                     <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="preview">Preview Result</TabsTrigger>
                       <TabsTrigger value="download">Download</TabsTrigger>
+                      <TabsTrigger value="preview">Preview Result</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="preview" className="mt-4">
-                      <div className="border rounded-lg overflow-hidden">
-                        <PDFViewer file={compressedFile} className="h-[400px]" />
-                      </div>
-                    </TabsContent>
                     <TabsContent value="download" className="mt-4">
                       <div className="text-center p-6 space-y-4">
                         <motion.div whileHover={{ scale: 1.05 }}>
@@ -347,6 +341,11 @@ const CompressPdf = () => {
                             Compress Another PDF
                           </Button>
                         </div>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="preview" className="mt-4">
+                      <div className="border rounded-lg overflow-hidden">
+                        <PDFViewer file={compressedFile} className="h-[400px]" />
                       </div>
                     </TabsContent>
                   </Tabs>

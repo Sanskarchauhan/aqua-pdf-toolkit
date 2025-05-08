@@ -16,6 +16,7 @@ interface ToolCardProps {
   onProcess: () => void;
   onDownload: () => void;
   onReset: () => void;
+  showPreview?: boolean; // New prop to control whether preview is shown
   children?: React.ReactNode;
 }
 
@@ -29,9 +30,10 @@ const ToolCard: React.FC<ToolCardProps> = ({
   onProcess,
   onDownload,
   onReset,
+  showPreview = true, // Default to true for backward compatibility
   children,
 }) => {
-  const [showPreview, setShowPreview] = useState<boolean>(false);
+  const [showPreviewContent, setShowPreviewContent] = useState<boolean>(false);
 
   return (
     <div className="bg-card border rounded-xl mt-6 shadow-sm overflow-hidden">
@@ -90,16 +92,22 @@ const ToolCard: React.FC<ToolCardProps> = ({
                 <Download className="h-4 w-4 mr-2" />
                 Download Result
               </Button>
-              <Button variant="outline" onClick={() => setShowPreview(!showPreview)}>
-                {showPreview ? 'Hide Preview' : 'Preview Result'}
-              </Button>
+              
+              {/* Only show preview button if showPreview is true */}
+              {showPreview && (
+                <Button variant="outline" onClick={() => setShowPreviewContent(!showPreviewContent)}>
+                  {showPreviewContent ? 'Hide Preview' : 'Preview Result'}
+                </Button>
+              )}
+              
               <Button variant="ghost" onClick={onReset}>
                 Process Another File
               </Button>
             </div>
           </div>
           
-          {showPreview && resultFile && (
+          {/* Only render preview content if showPreview is true and preview is toggled on */}
+          {showPreview && showPreviewContent && resultFile && (
             <div className="p-4 bg-muted/30 border-t">
               <PDFViewer file={resultFile} className="max-h-[500px]" />
             </div>
