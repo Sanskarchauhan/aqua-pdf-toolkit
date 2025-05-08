@@ -16,7 +16,7 @@ interface ToolCardProps {
   onProcess: () => void;
   onDownload: () => void;
   onReset: () => void;
-  showPreview?: boolean; // New prop to control whether preview is shown
+  showPreview?: boolean;
   children?: React.ReactNode;
 }
 
@@ -30,7 +30,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
   onProcess,
   onDownload,
   onReset,
-  showPreview = true, // Default to true for backward compatibility
+  showPreview = true,
   children,
 }) => {
   const [showPreviewContent, setShowPreviewContent] = useState<boolean>(false);
@@ -82,7 +82,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
                   <span className="flex items-center">
                     {isMergeTool ? 
                       `Merge ${files.length} ${files.length === 1 ? 'File' : 'Files'}` : 
-                      'Process Files'}
+                      files.length > 1 ? `Process ${files.length} Files` : 'Process File'}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </span>
                 )}
@@ -98,7 +98,9 @@ const ToolCard: React.FC<ToolCardProps> = ({
           
           {processing && (
             <div className="mt-8 animate-fade-in">
-              <p className="text-center mb-2">Processing your files...</p>
+              <p className="text-center mb-2">
+                {files.length > 1 ? `Processing ${files.length} files...` : 'Processing your file...'}
+              </p>
               <Progress value={progress} className="h-2" />
             </div>
           )}
@@ -111,7 +113,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
             </div>
             <h2 className="text-xl font-bold mb-2">Processing Complete!</h2>
             <p className="text-muted-foreground mb-6">
-              Your files have been processed successfully.
+              {files.length > 1 ? 'Your files have been processed successfully.' : 'Your file has been processed successfully.'}
             </p>
             <div className="flex justify-center gap-4 mb-6">
               <Button onClick={onDownload} className="bg-primary hover:bg-primary/90">
@@ -120,20 +122,20 @@ const ToolCard: React.FC<ToolCardProps> = ({
               </Button>
               
               {/* Only show preview button if showPreview is true */}
-              {showPreview && (
+              {showPreview && resultFile && resultFile.type.includes('pdf') && (
                 <Button variant="outline" onClick={() => setShowPreviewContent(!showPreviewContent)}>
                   {showPreviewContent ? 'Hide Preview' : 'Preview Result'}
                 </Button>
               )}
               
               <Button variant="ghost" onClick={onReset}>
-                Process Another File
+                Process {files.length > 1 ? 'More Files' : 'Another File'}
               </Button>
             </div>
           </div>
           
           {/* Only render preview content if showPreview is true and preview is toggled on */}
-          {showPreview && showPreviewContent && resultFile && (
+          {showPreview && showPreviewContent && resultFile && resultFile.type.includes('pdf') && (
             <div className="p-4 bg-muted/30 border-t">
               <PDFViewer file={resultFile} className="max-h-[500px]" />
             </div>

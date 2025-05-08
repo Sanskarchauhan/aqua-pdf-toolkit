@@ -6,8 +6,11 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download, Maximize } from '
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/components/theme/ThemeProvider';
 
-// Set PDF.js worker source to a specific version that's available
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+// Fix PDF.js worker source - using a local copy from node_modules
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString();
 
 interface PDFViewerProps {
   file: File | null;
@@ -20,12 +23,14 @@ const PDFViewer = ({ file, className }: PDFViewerProps) => {
   const [url, setUrl] = useState<string | null>(null);
   const [scale, setScale] = useState<number>(1.0);
   const [rotation, setRotation] = useState<number>(0);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     if (file) {
       const objectUrl = URL.createObjectURL(file);
       setUrl(objectUrl);
+      setLoadError(null);
       
       return () => {
         URL.revokeObjectURL(objectUrl);
@@ -35,6 +40,12 @@ const PDFViewer = ({ file, className }: PDFViewerProps) => {
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
+    setLoadError(null);
+  }
+
+  function onDocumentLoadError(error: Error) {
+    console.error("Error loading PDF:", error);
+    setLoadError(error);
   }
 
   const zoomIn = () => setScale(prevScale => Math.min(prevScale + 0.2, 3));
@@ -61,6 +72,23 @@ const PDFViewer = ({ file, className }: PDFViewerProps) => {
           <polyline points="14 2 14 8 20 8"/>
         </svg>
         <p>No file selected</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className={cn("flex flex-col items-center justify-center p-8 text-muted-foreground", className)}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-4 text-destructive">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <p className="font-medium text-destructive">Failed to load PDF</p>
+        <p className="text-sm mt-2 max-w-md text-center">There was an error loading the PDF. The file might be corrupted or not supported.</p>
+        <Button variant="outline" className="mt-4" onClick={() => setLoadError(null)}>
+          Try Again
+        </Button>
       </div>
     );
   }
@@ -153,7 +181,7 @@ const PDFViewer = ({ file, className }: PDFViewerProps) => {
           <Document
             file={url}
             onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={(error) => console.error('Error loading PDF:', error)}
+            onLoadError={onDocumentLoadError}
             loading={
               <div className="flex justify-center items-center h-40">
                 <div className="animate-spin h-6 w-6 border-2 border-primary rounded-full border-t-transparent"></div>

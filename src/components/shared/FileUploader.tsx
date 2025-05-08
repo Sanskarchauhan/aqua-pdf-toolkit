@@ -15,7 +15,7 @@ export interface FileUploaderProps {
   label?: string;
   icon?: React.ReactNode;
   queueMode?: boolean;
-  isMultiFile?: boolean; // New prop to indicate multi-file tools
+  isMultiFile?: boolean; // For multi-file tools
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
@@ -28,7 +28,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   label,
   icon,
   queueMode = false,
-  isMultiFile = false, // Default false
+  isMultiFile = false,
 }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -51,14 +51,19 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
       if (validFiles.length === 0) return;
 
-      if (queueMode) {
-        // In queue mode, add to the queue instead of processing immediately
+      if (queueMode || isMultiFile) {
+        // In queue mode or for multi-file tools, add to the queue
         const newQueue = [...fileQueue, ...validFiles];
         setFileQueue(newQueue);
         
-        // Update the displayed files
+        // Update the displayed files, respecting the max files limit
         const newFiles = [...files, ...validFiles].slice(0, maxFiles);
         setFiles(newFiles);
+        
+        // If it's a multi-file tool, immediately notify parent about the new files
+        if (isMultiFile) {
+          onFilesAdded([...files, ...validFiles].slice(0, maxFiles));
+        }
       } else {
         // Normal mode - process files immediately
         const newFiles = [...files, ...validFiles].slice(0, maxFiles);
@@ -71,19 +76,23 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         }
       }
     },
-    [files, fileQueue, maxFiles, maxFileSizeMB, onFilesAdded, onFileSelect, queueMode]
+    [files, fileQueue, maxFiles, maxFileSizeMB, onFilesAdded, onFileSelect, queueMode, isMultiFile]
   );
 
   const removeFile = (index: number) => {
     const newFiles = [...files];
-    newFiles.splice(index, 1);
+    const removedFile = newFiles.splice(index, 1)[0];
     setFiles(newFiles);
     
     // Also remove from queue if in queue mode
-    if (queueMode) {
-      const newQueue = [...fileQueue];
-      newQueue.splice(index, 1);
+    if (queueMode || isMultiFile) {
+      const newQueue = fileQueue.filter(file => file.name !== removedFile.name);
       setFileQueue(newQueue);
+      
+      // If it's a multi-file tool, notify parent about the file removal
+      if (isMultiFile) {
+        onFilesAdded(newFiles);
+      }
     } else {
       // Notify parent component about file removal
       onFilesAdded(newFiles);
@@ -106,6 +115,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: handleDrop,
     accept: acceptedFileTypes,
+    multiple: isMultiFile || queueMode || maxFiles > 1,
   });
 
   return (
@@ -116,19 +126,21 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           isDragActive
             ? 'border-primary bg-primary/5'
             : 'border-muted-foreground/25 hover:border-primary/50'
-        } ${isMultiFile ? 'border-primary/50 bg-primary/5' : ''}`}
+        } ${isMultiFile || queueMode ? 'border-primary/50 bg-primary/5' : ''}`}
       >
-        <input {...getInputProps()} multiple={isMultiFile || maxFiles > 1} />
+        <input {...getInputProps()} multiple={isMultiFile || queueMode || maxFiles > 1} />
         
         <div className="flex flex-col items-center justify-center space-y-2">
-          {icon || (isMultiFile ? 
+          {icon || (isMultiFile || queueMode ? 
             <Files className="h-8 w-8 text-primary mb-2" /> : 
             <Upload className="h-8 w-8 text-muted-foreground mb-2" />
           )}
           
           <p className="text-lg font-medium">
             {label || (isMultiFile ? 
-              "Drop multiple PDF files here, or click to select" : 
+              "Drop multiple files here, or click to select" : 
+              queueMode ?
+              "Drop multiple files to queue them, or click to select" :
               "Drag & drop files here, or click to select files"
             )}
           </p>
@@ -138,13 +150,13 @@ const FileUploader: React.FC<FileUploaderProps> = ({
               'All file types accepted'}
           </p>
           <p className="text-xs text-muted-foreground">
-            {isMultiFile ? 
+            {isMultiFile || queueMode ? 
               `You can select up to ${maxFiles} files at once` :
               `Maximum file size: ${maxFileSizeMB}MB`
             }
           </p>
           <Button variant="outline" size="sm" className="mt-2">
-            {isMultiFile ? "Select Multiple Files" : "Select Files"}
+            {isMultiFile || queueMode ? "Select Multiple Files" : "Select Files"}
           </Button>
         </div>
       </div>
@@ -185,33 +197,51 @@ const FileUploader: React.FC<FileUploaderProps> = ({
               )}
             </div>
             
-            {files.map((file, index) => (
-              <motion.div
-                key={`${file.name}-${index}`}
-                className="flex items-center justify-between p-2 bg-muted rounded-md"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="flex items-center">
-                  <File className="h-4 w-4 mr-2" />
-                  <span className="text-sm truncate max-w-[200px]">{file.name}</span>
-                  <span className="text-xs text-muted-foreground ml-2">
-                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeFile(index)}
-                  className="h-6 w-6 p-0"
+            <div className="max-h-[200px] overflow-y-auto pr-2">
+              {files.map((file, index) => (
+                <motion.div
+                  key={`${file.name}-${index}`}
+                  className="flex items-center justify-between p-2 bg-muted rounded-md mb-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Remove file</span>
+                  <div className="flex items-center">
+                    <File className="h-4 w-4 mr-2" />
+                    <span className="text-sm truncate max-w-[200px]">{file.name}</span>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFile(index)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Remove file</span>
+                  </Button>
+                </motion.div>
+              ))}
+            </div>
+            
+            {queueMode && files.length >= 2 && fileQueue.length > 0 && (
+              <div className="mt-4 p-3 bg-primary/10 rounded-md flex justify-between items-center">
+                <p className="text-sm flex items-center">
+                  <ListPlus className="h-4 w-4 mr-2 text-primary" />
+                  <span>{fileQueue.length} files ready for batch processing</span>
+                </p>
+                <Button 
+                  size="sm" 
+                  onClick={processQueue}
+                  disabled={processingQueue}
+                >
+                  Process All
                 </Button>
-              </motion.div>
-            ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

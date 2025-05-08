@@ -30,8 +30,9 @@ interface ToolInfo {
   maxFiles: number;
   requiresPassword?: boolean;
   isEditTool?: boolean;
-  isPremium?: boolean;
-  showPreview?: boolean; // New property to control preview visibility
+  showPreview?: boolean;
+  supportsQueueProcessing?: boolean; // New property for queue processing
+  isMultiFile?: boolean; // For tools like merge-pdf that need multiple files
 }
 
 const ToolPage = () => {
@@ -72,26 +73,36 @@ const ToolPage = () => {
   }, [showDebug, toast]);
   
   const handleFilesAdded = (newFiles: File[]) => {
-    // Check if we're in jpg-to-pdf tool for queue processing
-    const isJpgToPdf = toolId === 'jpg-to-pdf';
+    // Check if we're in a tool that supports queue processing
+    const isQueueTool = toolInfo?.supportsQueueProcessing || false;
+    const isMultiFileTool = toolInfo?.isMultiFile || false;
     
     setTimeout(() => {
       setFiles(prevFiles => {
-        // For jpg-to-pdf we want to accumulate files for batch processing
-        const updatedFiles = isJpgToPdf 
+        // For multi-file tools like merge-pdf, we want to accumulate files
+        // For queue processing tools, we want to accumulate files too
+        const updatedFiles = (isQueueTool || isMultiFileTool) 
           ? [...prevFiles, ...newFiles]
-          : [...prevFiles, ...newFiles];
+          : [...newFiles];
         
         toast({
           title: "Files added successfully",
           description: `${newFiles.length} ${newFiles.length === 1 ? 'file' : 'files'} added.`,
         });
         
-        // For jpg-to-pdf, we have a special message about queue processing
-        if (isJpgToPdf && updatedFiles.length > 1) {
+        // Special message for queue processing
+        if (isQueueTool && updatedFiles.length > 1) {
           toast({
-            title: "Multiple images added",
-            description: "Click 'Process' when you're ready to convert all images to PDF.",
+            title: "Multiple files added",
+            description: "All files will be processed together when you click 'Process'.",
+          });
+        }
+        
+        // Special message for merge-pdf
+        if (isMultiFileTool && updatedFiles.length > 1) {
+          toast({
+            title: "Multiple files added",
+            description: "These files will be merged into a single PDF when you click 'Process'.",
           });
         }
         
@@ -147,6 +158,16 @@ const ToolPage = () => {
       toast({
         title: "No files selected",
         description: "Please add at least one file to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check for minimum files for multi-file tools
+    if (toolInfo?.isMultiFile && files.length < 2) {
+      toast({
+        title: "Not enough files",
+        description: "Please add at least two files to merge.",
         variant: "destructive",
       });
       return;
@@ -255,7 +276,8 @@ const ToolPage = () => {
       icon: FileUp,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 5,
-      showPreview: true, // Show preview for this tool
+      showPreview: true,
+      supportsQueueProcessing: true,
     },
     'merge-pdf': {
       id: 'merge-pdf',
@@ -265,6 +287,8 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 20,
       showPreview: true,
+      isMultiFile: true,
+      supportsQueueProcessing: true,
     },
     'pdf-to-word': {
       id: 'pdf-to-word',
@@ -273,7 +297,8 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 3,
-      showPreview: false, // No preview needed for conversion tools
+      showPreview: false,
+      supportsQueueProcessing: true,
     },
     'word-to-pdf': {
       id: 'word-to-pdf',
@@ -285,7 +310,8 @@ const ToolPage = () => {
         'application/msword': ['.doc'] 
       },
       maxFiles: 3,
-      showPreview: true, // Show PDF preview after conversion
+      showPreview: true,
+      supportsQueueProcessing: true,
     },
     'pdf-to-excel': {
       id: 'pdf-to-excel',
@@ -295,6 +321,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       showPreview: false,
+      supportsQueueProcessing: true,
     },
     'excel-to-pdf': {
       id: 'excel-to-pdf',
@@ -307,6 +334,7 @@ const ToolPage = () => {
       },
       maxFiles: 3,
       showPreview: true,
+      supportsQueueProcessing: true,
     },
     'pdf-to-jpg': {
       id: 'pdf-to-jpg',
@@ -325,6 +353,7 @@ const ToolPage = () => {
       acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 20,
       showPreview: true,
+      supportsQueueProcessing: true,
     },
     'pdf-to-ppt': {
       id: 'pdf-to-ppt',
@@ -346,6 +375,7 @@ const ToolPage = () => {
       },
       maxFiles: 3,
       showPreview: true,
+      supportsQueueProcessing: true,
     },
     'split-pdf': {
       id: 'split-pdf',
@@ -373,6 +403,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 2,
       showPreview: false,
+      supportsQueueProcessing: true,
     },
     'edit-pdf': {
       id: 'edit-pdf',
@@ -412,6 +443,7 @@ const ToolPage = () => {
       acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 10,
       showPreview: true,
+      supportsQueueProcessing: true,
     },
     'delete-pages': {
       id: 'delete-pages',
@@ -456,8 +488,9 @@ const ToolPage = () => {
     return <Icon className="h-6 w-6 text-primary" />;
   };
   
-  // Check if the current tool is jpg-to-pdf for queue mode
-  const isQueueModeEnabled = toolId === 'jpg-to-pdf';
+  // Check if the current tool has special options
+  const isQueueModeEnabled = toolInfo?.supportsQueueProcessing || false;
+  const isMultiFileTool = toolInfo?.isMultiFile || false;
   
   return (
     <AnimatedPage>
@@ -498,7 +531,7 @@ const ToolPage = () => {
           onProcess={handleProcess}
           onDownload={handleDownload}
           onReset={handleReset}
-          showPreview={toolInfo.showPreview !== false} // Pass the preview flag to ToolCard
+          showPreview={toolInfo.showPreview !== false}
         >
           <FileUploader
             acceptedFileTypes={toolInfo?.acceptedFormats}
@@ -506,7 +539,7 @@ const ToolPage = () => {
             onFilesAdded={handleFilesAdded}
             className="mb-4"
             queueMode={isQueueModeEnabled}
-            isMultiFile={toolId === 'merge-pdf'} // Mark merge-pdf tool as multi-file
+            isMultiFile={isMultiFileTool}
           />
           
           {files.length > 0 && files[0].type.includes('pdf') && !processing && (
@@ -529,8 +562,8 @@ const ToolPage = () => {
             </motion.div>
           )}
           
-          {/* Special instructions for jpg-to-pdf */}
-          {isQueueModeEnabled && files.length > 0 && (
+          {/* Special instructions for queue mode tools */}
+          {isQueueModeEnabled && files.length > 1 && (
             <motion.div
               className="mt-4 p-3 bg-primary/10 rounded-md text-sm"
               initial={{ opacity: 0, y: -10 }}
@@ -539,8 +572,25 @@ const ToolPage = () => {
               <p className="flex items-center">
                 <ListPlus className="h-4 w-4 mr-2 text-primary" />
                 <span>
-                  <strong>{files.length}</strong> images are ready to be converted. 
-                  Click the "Process" button to convert them all to a single PDF.
+                  <strong>{files.length}</strong> files are ready to be processed. 
+                  Click the "Process" button to handle them all at once.
+                </span>
+              </p>
+            </motion.div>
+          )}
+          
+          {/* Special instructions for merge-pdf */}
+          {isMultiFileTool && files.length > 0 && (
+            <motion.div
+              className="mt-4 p-3 bg-primary/10 rounded-md text-sm"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <p className="flex items-center">
+                <Layers className="h-4 w-4 mr-2 text-primary" />
+                <span>
+                  <strong>{files.length}</strong> files will be merged in the order shown. 
+                  {files.length < 2 ? " Add at least one more file to enable merging." : " Click Process to merge all files into one PDF."}
                 </span>
               </p>
             </motion.div>
