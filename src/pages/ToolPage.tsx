@@ -152,29 +152,14 @@ const ToolPage = () => {
       return;
     }
     
-    // Modified: Check for premium features but don't require login for basic features
-    if (toolInfo?.isPremium) {
-      if (!isAuthenticated) {
-        // Inform user they need to login for premium features
-        toast({
-          title: "Premium Feature",
-          description: "This is a premium feature. You can use basic features without logging in.",
-        });
-        setShowLoginPrompt(true);
-        return;
-      } else if (!hasAvailableTrials) {
-        setShowPremiumModal(true);
-        return;
-      }
-    }
-    
+    // Modified: All features are free now, removed premium check
     if (toolInfo?.requiresPassword && !password) {
       setShowPasswordDialog(true);
       return;
     }
     
-    // Increment trial count only for authenticated non-subscribed users
-    if (isAuthenticated && user && !user.isSubscribed) {
+    // Only increment trial count for authenticated users
+    if (isAuthenticated && user) {
       increaseTrialCount();
     }
     
@@ -288,7 +273,6 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 3,
-      isPremium: true,
       showPreview: false, // No preview needed for conversion tools
     },
     'word-to-pdf': {
@@ -310,7 +294,6 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
-      isPremium: true,
       showPreview: false,
     },
     'excel-to-pdf': {
@@ -350,7 +333,6 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
-      isPremium: true,
       showPreview: false,
     },
     'ppt-to-pdf': {
@@ -390,7 +372,6 @@ const ToolPage = () => {
       icon: ScanLine,
       acceptedFormats: { 'application/pdf': ['.pdf'], 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 2,
-      isPremium: true,
       showPreview: false,
     },
     'edit-pdf': {
@@ -401,7 +382,6 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       isEditTool: true,
-      isPremium: true,
       showPreview: true,
     },
     'unlock-pdf': {
@@ -431,7 +411,6 @@ const ToolPage = () => {
       icon: Camera,
       acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 10,
-      isPremium: true,
       showPreview: true,
     },
     'delete-pages': {
@@ -507,48 +486,8 @@ const ToolPage = () => {
             <h1 className="text-3xl font-bold">{toolInfo.name}</h1>
             <p className="text-muted-foreground">{toolInfo.description}</p>
           </div>
-          {toolInfo.isPremium && (
-            <div className="ml-auto">
-              <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs py-1 px-2 rounded-full flex items-center">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="h-3 w-3 mr-1"
-                >
-                  <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                </svg>
-                Premium Feature
-              </div>
-            </div>
-          )}
         </motion.div>
 
-        {/* Show login prompt for premium features if not authenticated */}
-        {showLoginPrompt && (
-          <div className="mb-6 p-4 border border-primary/20 bg-primary/5 rounded-lg">
-            <p className="flex items-center text-sm">
-              <Lock className="h-4 w-4 mr-2 text-primary" />
-              This is a premium feature. 
-              <Button 
-                variant="link" 
-                onClick={() => navigate('/login')} 
-                className="px-2 h-auto"
-              >
-                Sign in
-              </Button> 
-              or 
-              <Button 
-                variant="link" 
-                onClick={() => navigate('/signup')} 
-                className="px-2 h-auto"
-              >
-                create an account
-              </Button> 
-              to continue.
-            </p>
-          </div>
-        )}
-        
         <ToolCard
           toolId={toolId || ''}
           files={files}
