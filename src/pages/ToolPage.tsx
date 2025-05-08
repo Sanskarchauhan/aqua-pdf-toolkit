@@ -73,8 +73,8 @@ const ToolPage = () => {
   }, [showDebug, toast]);
   
   const handleFilesAdded = (newFiles: File[]) => {
-    // Check if we're in a tool that supports queue processing
-    const isQueueTool = toolInfo?.supportsQueueProcessing || false;
+    // Make all tools support queue processing by default
+    const isQueueTool = true; // Enable queue processing for all tools
     const isMultiFileTool = toolInfo?.isMultiFile || false;
     
     setTimeout(() => {
@@ -488,8 +488,8 @@ const ToolPage = () => {
     return <Icon className="h-6 w-6 text-primary" />;
   };
   
-  // Check if the current tool has special options
-  const isQueueModeEnabled = toolInfo?.supportsQueueProcessing || false;
+  // Enable queue mode for all tools
+  const isQueueModeEnabled = true;
   const isMultiFileTool = toolInfo?.isMultiFile || false;
   
   return (
@@ -562,8 +562,8 @@ const ToolPage = () => {
             </motion.div>
           )}
           
-          {/* Special instructions for queue mode tools */}
-          {isQueueModeEnabled && files.length > 1 && (
+          {/* Show queue processing info for all tools with multiple files */}
+          {files.length > 1 && (
             <motion.div
               className="mt-4 p-3 bg-primary/10 rounded-md text-sm"
               initial={{ opacity: 0, y: -10 }}
@@ -593,35 +593,6 @@ const ToolPage = () => {
                   {files.length < 2 ? " Add at least one more file to enable merging." : " Click Process to merge all files into one PDF."}
                 </span>
               </p>
-            </motion.div>
-          )}
-          
-          {/* Only show trial information for authenticated users */}
-          {isAuthenticated && user && !user.isSubscribed && (
-            <motion.div 
-              className="mt-4 text-center text-sm text-muted-foreground"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <p>
-                You've used {user.trialCount} of 3 free trials
-                {user.trialCount >= 3 && (
-                  <Button
-                    variant="link"
-                    className="text-primary p-0 h-auto font-normal ml-2"
-                    onClick={() => navigate('/pricing')}
-                  >
-                    Upgrade to Premium
-                  </Button>
-                )}
-              </p>
-              <div className="w-full bg-muted/50 rounded-full h-1.5 mt-1">
-                <div 
-                  className="h-1.5 rounded-full bg-primary"
-                  style={{ width: `${Math.min(100, (user.trialCount / 3) * 100)}%` }}
-                ></div>
-              </div>
             </motion.div>
           )}
         </ToolCard>

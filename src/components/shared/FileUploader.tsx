@@ -60,15 +60,18 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         const newFiles = [...files, ...validFiles].slice(0, maxFiles);
         setFiles(newFiles);
         
-        // If it's a multi-file tool, immediately notify parent about the new files
-        if (isMultiFile) {
-          onFilesAdded([...files, ...validFiles].slice(0, maxFiles));
+        // Immediately notify parent about the new files regardless of tool type
+        onFilesAdded(newFiles);
+        
+        // If onFileSelect is provided and there's only one file, call it
+        if (onFileSelect && validFiles.length === 1) {
+          onFileSelect(validFiles[0]);
         }
       } else {
         // Normal mode - process files immediately
         const newFiles = [...files, ...validFiles].slice(0, maxFiles);
         setFiles(newFiles);
-        onFilesAdded(validFiles);
+        onFilesAdded(newFiles);
         
         // If onFileSelect is provided and there's only one file, call it
         if (onFileSelect && validFiles.length === 1) {
@@ -88,15 +91,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     if (queueMode || isMultiFile) {
       const newQueue = fileQueue.filter(file => file.name !== removedFile.name);
       setFileQueue(newQueue);
-      
-      // If it's a multi-file tool, notify parent about the file removal
-      if (isMultiFile) {
-        onFilesAdded(newFiles);
-      }
-    } else {
-      // Notify parent component about file removal
-      onFilesAdded(newFiles);
     }
+    
+    // Always notify parent about file removal
+    onFilesAdded(newFiles);
   };
 
   const processQueue = () => {
@@ -227,7 +225,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
               ))}
             </div>
             
-            {queueMode && files.length >= 2 && fileQueue.length > 0 && (
+            {queueMode && files.length >= 1 && fileQueue.length > 0 && (
               <div className="mt-4 p-3 bg-primary/10 rounded-md flex justify-between items-center">
                 <p className="text-sm flex items-center">
                   <ListPlus className="h-4 w-4 mr-2 text-primary" />

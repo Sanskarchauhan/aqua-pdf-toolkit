@@ -64,6 +64,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
           
           {children}
           
+          {/* Always show the process button when at least one file is selected */}
           {files.length > 0 && (
             <div className="mt-6 flex justify-center">
               <Button 
