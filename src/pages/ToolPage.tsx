@@ -567,6 +567,7 @@ const ToolPage = () => {
             onFilesAdded={handleFilesAdded}
             className="mb-4"
             queueMode={isQueueModeEnabled}
+            isMultiFile={toolId === 'merge-pdf'} // Mark merge-pdf tool as multi-file
           />
           
           {files.length > 0 && files[0].type.includes('pdf') && !processing && (
@@ -687,7 +688,10 @@ const ToolPage = () => {
               </div>
               <h3 className="font-medium mb-2">Upload Your Files</h3>
               <p className="text-muted-foreground">
-                Select or drag and drop your {toolInfo?.maxFiles || 1} {toolInfo?.maxFiles === 1 ? 'file' : 'files'} into the upload area.
+                {toolId === 'merge-pdf' ? 
+                  'Select or drag and drop multiple PDF files to combine them.' :
+                  `Select or drag and drop your ${toolInfo?.maxFiles || 1} ${toolInfo?.maxFiles === 1 ? 'file' : 'files'} into the upload area.`
+                }
               </p>
             </motion.div>
             

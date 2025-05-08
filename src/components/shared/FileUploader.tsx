@@ -2,7 +2,7 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
-import { X, Upload, File, AlertCircle, ListPlus } from 'lucide-react';
+import { X, Upload, File, AlertCircle, ListPlus, Files } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface FileUploaderProps {
@@ -15,6 +15,7 @@ export interface FileUploaderProps {
   label?: string;
   icon?: React.ReactNode;
   queueMode?: boolean;
+  isMultiFile?: boolean; // New prop to indicate multi-file tools
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
@@ -27,6 +28,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   label,
   icon,
   queueMode = false,
+  isMultiFile = false, // Default false
 }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +84,9 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       const newQueue = [...fileQueue];
       newQueue.splice(index, 1);
       setFileQueue(newQueue);
+    } else {
+      // Notify parent component about file removal
+      onFilesAdded(newFiles);
     }
   };
 
@@ -111,15 +116,21 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           isDragActive
             ? 'border-primary bg-primary/5'
             : 'border-muted-foreground/25 hover:border-primary/50'
-        }`}
+        } ${isMultiFile ? 'border-primary/50 bg-primary/5' : ''}`}
       >
-        <input {...getInputProps()} />
+        <input {...getInputProps()} multiple={isMultiFile || maxFiles > 1} />
         
         <div className="flex flex-col items-center justify-center space-y-2">
-          {icon || <Upload className="h-8 w-8 text-muted-foreground mb-2" />}
+          {icon || (isMultiFile ? 
+            <Files className="h-8 w-8 text-primary mb-2" /> : 
+            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+          )}
           
           <p className="text-lg font-medium">
-            {label || "Drag & drop files here, or click to select files"}
+            {label || (isMultiFile ? 
+              "Drop multiple PDF files here, or click to select" : 
+              "Drag & drop files here, or click to select files"
+            )}
           </p>
           <p className="text-sm text-muted-foreground">
             {acceptedFileTypes ? 
@@ -127,10 +138,13 @@ const FileUploader: React.FC<FileUploaderProps> = ({
               'All file types accepted'}
           </p>
           <p className="text-xs text-muted-foreground">
-            Maximum file size: {maxFileSizeMB}MB
+            {isMultiFile ? 
+              `You can select up to ${maxFiles} files at once` :
+              `Maximum file size: ${maxFileSizeMB}MB`
+            }
           </p>
           <Button variant="outline" size="sm" className="mt-2">
-            Select Files
+            {isMultiFile ? "Select Multiple Files" : "Select Files"}
           </Button>
         </div>
       </div>

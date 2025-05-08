@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FileCheck, Download, FileUp, ArrowRight } from 'lucide-react';
+import { FileCheck, Download, FileUp, ArrowRight, Files } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import PDFViewer from '@/components/shared/PDFViewer';
@@ -34,15 +34,33 @@ const ToolCard: React.FC<ToolCardProps> = ({
   children,
 }) => {
   const [showPreviewContent, setShowPreviewContent] = useState<boolean>(false);
+  const isMergeTool = toolId === 'merge-pdf';
 
   return (
     <div className="bg-card border rounded-xl mt-6 shadow-sm overflow-hidden">
       {!completed ? (
         <div className="p-6">
           <div className="flex items-center gap-2 mb-4 text-xl font-medium">
-            <FileUp className="h-5 w-5 text-primary" />
-            Upload Files
+            {isMergeTool ? (
+              <Files className="h-5 w-5 text-primary" />
+            ) : (
+              <FileUp className="h-5 w-5 text-primary" />
+            )}
+            {isMergeTool ? 'Upload Multiple Files' : 'Upload Files'}
           </div>
+          
+          {/* Show merge tool specific instructions */}
+          {isMergeTool && files.length < 2 && (
+            <div className="mb-4 p-3 bg-primary/10 rounded-lg text-sm">
+              <p className="flex items-center">
+                <Files className="h-4 w-4 mr-2 text-primary" />
+                <span>
+                  Select multiple PDF files to combine them into one document. 
+                  You can select up to 20 files at once or add them one by one.
+                </span>
+              </p>
+            </div>
+          )}
           
           {children}
           
@@ -50,7 +68,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
             <div className="mt-6 flex justify-center">
               <Button 
                 onClick={onProcess} 
-                disabled={processing}
+                disabled={processing || (isMergeTool && files.length < 2)}
                 className="min-w-[150px] bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
               >
                 {processing ? (
@@ -62,12 +80,20 @@ const ToolCard: React.FC<ToolCardProps> = ({
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    Process Files
+                    {isMergeTool ? 
+                      `Merge ${files.length} ${files.length === 1 ? 'File' : 'Files'}` : 
+                      'Process Files'}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </span>
                 )}
               </Button>
             </div>
+          )}
+          
+          {isMergeTool && files.length === 1 && (
+            <p className="text-center text-sm text-muted-foreground mt-2">
+              Please add at least one more PDF file to merge
+            </p>
           )}
           
           {processing && (
