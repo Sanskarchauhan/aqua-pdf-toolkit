@@ -14,7 +14,6 @@ import ToolDebug from '@/components/debug/ToolDebug';
 import ToolCard from '@/components/tools/ToolCard';
 import PasswordDialog from '@/components/shared/PasswordDialog';
 import { processFile, downloadFile } from '@/utils/fileProcessing';
-import PDFViewer from '@/components/shared/PDFViewer';
 import PDFEditor from '@/components/shared/PDFEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import PremiumModal from '@/components/shared/PremiumModal';
@@ -261,7 +260,7 @@ const ToolPage = () => {
       icon: FileUp,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 5,
-      showPreview: true,
+      showPreview: false,
       supportsQueueProcessing: true,
     },
     'merge-pdf': {
@@ -271,7 +270,7 @@ const ToolPage = () => {
       icon: Layers,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 20,
-      showPreview: true,
+      showPreview: false,
       isMultiFile: true,
       supportsQueueProcessing: true,
     },
@@ -295,7 +294,7 @@ const ToolPage = () => {
         'application/msword': ['.doc'] 
       },
       maxFiles: 3,
-      showPreview: true,
+      showPreview: false,
       supportsQueueProcessing: true,
     },
     'pdf-to-excel': {
@@ -318,7 +317,7 @@ const ToolPage = () => {
         'application/vnd.ms-excel': ['.xls'] 
       },
       maxFiles: 3,
-      showPreview: true,
+      showPreview: false,
       supportsQueueProcessing: true,
     },
     'pdf-to-jpg': {
@@ -337,7 +336,7 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 20,
-      showPreview: true,
+      showPreview: false,
       supportsQueueProcessing: true,
     },
     'pdf-to-ppt': {
@@ -359,7 +358,7 @@ const ToolPage = () => {
         'application/vnd.ms-powerpoint': ['.ppt'] 
       },
       maxFiles: 3,
-      showPreview: true,
+      showPreview: false,
       supportsQueueProcessing: true,
     },
     'split-pdf': {
@@ -378,7 +377,7 @@ const ToolPage = () => {
       icon: FileText,
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
-      showPreview: true,
+      showPreview: false,
     },
     'pdf-ocr': {
       id: 'pdf-ocr',
@@ -398,7 +397,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       isEditTool: true,
-      showPreview: true,
+      showPreview: false,
     },
     'unlock-pdf': {
       id: 'unlock-pdf',
@@ -427,7 +426,7 @@ const ToolPage = () => {
       icon: Camera,
       acceptedFormats: { 'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'] },
       maxFiles: 10,
-      showPreview: true,
+      showPreview: false,
       supportsQueueProcessing: true,
     },
     'delete-pages': {
@@ -438,7 +437,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       isEditTool: true,
-      showPreview: true,
+      showPreview: false,
     },
     'extract-pages': {
       id: 'extract-pages',
@@ -448,7 +447,7 @@ const ToolPage = () => {
       acceptedFormats: { 'application/pdf': ['.pdf'] },
       maxFiles: 1,
       isEditTool: true,
-      showPreview: true,
+      showPreview: false,
     },
   };
   
@@ -516,7 +515,7 @@ const ToolPage = () => {
           onProcess={handleProcess}
           onDownload={handleDownload}
           onReset={handleReset}
-          showPreview={toolInfo.showPreview !== false}
+          showPreview={false}
         >
           <FileUploader
             acceptedFileTypes={toolInfo?.acceptedFormats}
@@ -527,23 +526,19 @@ const ToolPage = () => {
             isMultiFile={isMultiFileTool}
           />
           
-          {files.length > 0 && files[0].type.includes('pdf') && !processing && (
+          {files.length > 0 && files[0].type.includes('pdf') && !processing && toolInfo.isEditTool && (
             <motion.div 
               className="mt-6 border rounded-xl overflow-hidden bg-muted/20"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
             >
-              {toolInfo.isEditTool ? (
-                <PDFEditor
-                  file={files[0]}
-                  onSave={handlePdfEdits}
-                  onDeletePages={toolId === 'delete-pages' ? handleDeletePages : undefined}
-                  onExtractPages={toolId === 'extract-pages' ? handleExtractPages : undefined}
-                />
-              ) : (
-                <PDFViewer file={files[0]} className="max-h-[400px]" />
-              )}
+              <PDFEditor
+                file={files[0]}
+                onSave={handlePdfEdits}
+                onDeletePages={toolId === 'delete-pages' ? handleDeletePages : undefined}
+                onExtractPages={toolId === 'extract-pages' ? handleExtractPages : undefined}
+              />
             </motion.div>
           )}
           
@@ -669,7 +664,7 @@ const ToolPage = () => {
               </div>
               <h3 className="font-medium mb-2">Download Result</h3>
               <p className="text-muted-foreground">
-                Once processing is complete, preview and download your {toolId?.includes('merge') ? 'merged file' : 'processed files'}.
+                Once processing is complete, download your {toolId?.includes('merge') ? 'merged file' : 'processed files'}.
               </p>
             </motion.div>
           </div>

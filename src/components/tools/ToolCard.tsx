@@ -1,9 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { FileCheck, Download, FileUp, ArrowRight, Files } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import PDFViewer from '@/components/shared/PDFViewer';
 import { downloadFile } from '@/utils/fileProcessing';
 
 interface ToolCardProps {
@@ -30,10 +29,9 @@ const ToolCard: React.FC<ToolCardProps> = ({
   onProcess,
   onDownload,
   onReset,
-  showPreview = true,
+  showPreview = false, // Default to false since we're removing the preview
   children,
 }) => {
-  const [showPreviewContent, setShowPreviewContent] = useState<boolean>(false);
   const isMergeTool = toolId === 'merge-pdf';
 
   return (
@@ -122,25 +120,11 @@ const ToolCard: React.FC<ToolCardProps> = ({
                 Download Result
               </Button>
               
-              {/* Only show preview button if showPreview is true */}
-              {showPreview && resultFile && resultFile.type.includes('pdf') && (
-                <Button variant="outline" onClick={() => setShowPreviewContent(!showPreviewContent)}>
-                  {showPreviewContent ? 'Hide Preview' : 'Preview Result'}
-                </Button>
-              )}
-              
               <Button variant="ghost" onClick={onReset}>
                 Process {files.length > 1 ? 'More Files' : 'Another File'}
               </Button>
             </div>
           </div>
-          
-          {/* Only render preview content if showPreview is true and preview is toggled on */}
-          {showPreview && showPreviewContent && resultFile && resultFile.type.includes('pdf') && (
-            <div className="p-4 bg-muted/30 border-t">
-              <PDFViewer file={resultFile} className="max-h-[500px]" />
-            </div>
-          )}
         </div>
       )}
     </div>
