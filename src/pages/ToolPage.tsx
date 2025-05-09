@@ -31,8 +31,8 @@ interface ToolInfo {
   requiresPassword?: boolean;
   isEditTool?: boolean;
   showPreview?: boolean;
-  supportsQueueProcessing?: boolean; // New property for queue processing
-  isMultiFile?: boolean; // For tools like merge-pdf that need multiple files
+  supportsQueueProcessing?: boolean;
+  isMultiFile?: boolean;
 }
 
 const ToolPage = () => {
@@ -73,17 +73,14 @@ const ToolPage = () => {
   }, [showDebug, toast]);
   
   const handleFilesAdded = (newFiles: File[]) => {
-    // Make all tools support queue processing by default
-    const isQueueTool = true; // Enable queue processing for all tools
+    // Enable queue processing for all tools
+    const isQueueTool = true;
     const isMultiFileTool = toolInfo?.isMultiFile || false;
     
     setTimeout(() => {
       setFiles(prevFiles => {
-        // For multi-file tools like merge-pdf, we want to accumulate files
-        // For queue processing tools, we want to accumulate files too
-        const updatedFiles = (isQueueTool || isMultiFileTool) 
-          ? [...prevFiles, ...newFiles]
-          : [...newFiles];
+        // For all tools, we want to accumulate files for queue processing
+        const updatedFiles = [...prevFiles, ...newFiles];
         
         toast({
           title: "Files added successfully",
@@ -91,18 +88,10 @@ const ToolPage = () => {
         });
         
         // Special message for queue processing
-        if (isQueueTool && updatedFiles.length > 1) {
+        if (updatedFiles.length > 1) {
           toast({
             title: "Multiple files added",
             description: "All files will be processed together when you click 'Process'.",
-          });
-        }
-        
-        // Special message for merge-pdf
-        if (isMultiFileTool && updatedFiles.length > 1) {
-          toast({
-            title: "Multiple files added",
-            description: "These files will be merged into a single PDF when you click 'Process'.",
           });
         }
         
@@ -173,17 +162,13 @@ const ToolPage = () => {
       return;
     }
     
-    // Modified: All features are free now, removed premium check
+    // All features are free now - removed premium check
     if (toolInfo?.requiresPassword && !password) {
       setShowPasswordDialog(true);
       return;
     }
     
-    // Only increment trial count for authenticated users
-    if (isAuthenticated && user) {
-      increaseTrialCount();
-    }
-    
+    // Processing is allowed for all users
     setProcessing(true);
     setProgress(0);
     
@@ -562,8 +547,8 @@ const ToolPage = () => {
             </motion.div>
           )}
           
-          {/* Show queue processing info for all tools with multiple files */}
-          {files.length > 1 && (
+          {/* Always show queue info when we have files */}
+          {files.length > 0 && (
             <motion.div
               className="mt-4 p-3 bg-primary/10 rounded-md text-sm"
               initial={{ opacity: 0, y: -10 }}
@@ -572,8 +557,8 @@ const ToolPage = () => {
               <p className="flex items-center">
                 <ListPlus className="h-4 w-4 mr-2 text-primary" />
                 <span>
-                  <strong>{files.length}</strong> files are ready to be processed. 
-                  Click the "Process" button to handle them all at once.
+                  <strong>{files.length}</strong> {files.length === 1 ? 'file is' : 'files are'} ready to be processed. 
+                  Click the "Process" button to {files.length > 1 ? 'handle them all at once.' : 'continue.'}
                 </span>
               </p>
             </motion.div>
@@ -589,7 +574,7 @@ const ToolPage = () => {
               <p className="flex items-center">
                 <Layers className="h-4 w-4 mr-2 text-primary" />
                 <span>
-                  <strong>{files.length}</strong> files will be merged in the order shown. 
+                  <strong>{files.length}</strong> {files.length === 1 ? 'file' : 'files'} will be merged in the order shown. 
                   {files.length < 2 ? " Add at least one more file to enable merging." : " Click Process to merge all files into one PDF."}
                 </span>
               </p>
@@ -668,6 +653,7 @@ const ToolPage = () => {
               <h3 className="font-medium mb-2">Process</h3>
               <p className="text-muted-foreground">
                 Click the Process button and our system will handle the conversion.
+                {files.length > 1 ? ' Multiple files are processed in batch.' : ''}
               </p>
             </motion.div>
             

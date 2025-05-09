@@ -6,11 +6,8 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download, Maximize } from '
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/components/theme/ThemeProvider';
 
-// Fix PDF.js worker source - using a local copy from node_modules
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
-  import.meta.url,
-).toString();
+// Fix PDF.js worker source - using CDNJS for better compatibility
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 interface PDFViewerProps {
   file: File | null;
@@ -24,6 +21,7 @@ const PDFViewer = ({ file, className }: PDFViewerProps) => {
   const [scale, setScale] = useState<number>(1.0);
   const [rotation, setRotation] = useState<number>(0);
   const [loadError, setLoadError] = useState<Error | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
@@ -31,6 +29,7 @@ const PDFViewer = ({ file, className }: PDFViewerProps) => {
       const objectUrl = URL.createObjectURL(file);
       setUrl(objectUrl);
       setLoadError(null);
+      setLoading(true);
       
       return () => {
         URL.revokeObjectURL(objectUrl);
@@ -41,11 +40,14 @@ const PDFViewer = ({ file, className }: PDFViewerProps) => {
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
     setLoadError(null);
+    setLoading(false);
+    console.log("PDF loaded successfully with", numPages, "pages");
   }
 
   function onDocumentLoadError(error: Error) {
     console.error("Error loading PDF:", error);
     setLoadError(error);
+    setLoading(false);
   }
 
   const zoomIn = () => setScale(prevScale => Math.min(prevScale + 0.2, 3));
@@ -187,6 +189,10 @@ const PDFViewer = ({ file, className }: PDFViewerProps) => {
                 <div className="animate-spin h-6 w-6 border-2 border-primary rounded-full border-t-transparent"></div>
               </div>
             }
+            options={{
+              cMapUrl: 'https://unpkg.com/pdfjs-dist@3.4.120/cmaps/',
+              cMapPacked: true,
+            }}
           >
             <Page 
               pageNumber={pageNumber} 
