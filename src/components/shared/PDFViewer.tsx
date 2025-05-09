@@ -6,8 +6,8 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download, Maximize } from '
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/components/theme/ThemeProvider';
 
-// Fix PDF.js worker source - using CDNJS for better compatibility
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Fix PDF.js worker source - using a specific version that's definitely available
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 interface PDFViewerProps {
   file: File | null;
@@ -190,7 +190,7 @@ const PDFViewer = ({ file, className }: PDFViewerProps) => {
               </div>
             }
             options={{
-              cMapUrl: 'https://unpkg.com/pdfjs-dist@3.4.120/cmaps/',
+              cMapUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjs.version + '/cmaps/',
               cMapPacked: true,
             }}
           >

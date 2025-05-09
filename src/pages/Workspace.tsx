@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -41,11 +42,11 @@ const Workspace = () => {
       const fileType = files[0].name.split('.').pop()?.toLowerCase();
       
       if (fileType === 'pdf') {
-        navigate('/tool/edit-pdf');
+        navigate('/tools/edit-pdf'); // Fixed path
       } else if (['doc', 'docx'].includes(fileType || '')) {
-        navigate('/tool/word-to-pdf');
+        navigate('/tools/word-to-pdf'); // Fixed path
       } else if (['jpg', 'jpeg', 'png'].includes(fileType || '')) {
-        navigate('/tool/jpg-to-pdf');
+        navigate('/tools/jpg-to-pdf'); // Fixed path
       }
     }
   };
@@ -192,7 +193,7 @@ const Workspace = () => {
                 <Card 
                   key={tool.id}
                   className="border cursor-pointer transition-all hover:shadow-md"
-                  onClick={() => navigate(`/tool/${tool.id}`)}
+                  onClick={() => navigate(`/tools/${tool.id}`)}
                 >
                   <CardContent className="p-4 text-center">
                     <div className={`${tool.color} rounded-full p-3 mx-auto w-12 h-12 flex items-center justify-center mb-2`}>
