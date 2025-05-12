@@ -114,11 +114,11 @@ const ExtractPages = () => {
           // Create a blob URL for the file
           const fileUrl = URL.createObjectURL(resultFile);
           
-          // Initialize the viewer
+          // Initialize the viewer with the correct path
           const instance = await WebViewer({
-            path: '/public/lib/pdf',
+            path: '/lib/pdf', // Fix: The correct path without 'public' prefix
             initialDoc: fileUrl,
-            licenseKey: 'demo:1684564031726:7c0ee9b10300000000d33b723d1b0f99eb12bc7f1a206911e23bcb3ce9', // Demo key, replace with your key in production
+            licenseKey: 'demo:1684564031726:7c0ee9b10300000000d33b723d1b0f99eb12bc7f1a206911e23bcb3ce9', // Demo key
           }, viewerDivRef.current);
           
           setViewerInstance(instance);
