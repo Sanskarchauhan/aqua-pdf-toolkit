@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { processFile } from '@/utils/fileProcessing';
 import { useAuth } from '@/contexts/AuthContext';
 import PremiumModal from '@/components/shared/PremiumModal';
 import { motion } from 'framer-motion';
+import CustomPDFViewer from '@/components/pdf/CustomPDFViewer';
 
 const ExtractPages = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -24,8 +25,6 @@ const ExtractPages = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAuthenticated, hasAvailableTrials, increaseTrialCount } = useAuth();
-  const viewerDivRef = useRef<HTMLDivElement>(null);
-  const [viewerInstance, setViewerInstance] = useState<any>(null);
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
@@ -104,50 +103,6 @@ const ExtractPages = () => {
     }
   };
 
-  // Initialize PDF viewer when result file is available and preview is requested
-  useEffect(() => {
-    if (resultFile && showPreview && viewerDivRef.current) {
-      const initializeViewer = async () => {
-        try {
-          const WebViewer = (await import('@pdftron/pdfjs-express')).default;
-          
-          // Create a blob URL for the file
-          const fileUrl = URL.createObjectURL(resultFile);
-          
-          // Initialize the viewer with the correct path
-          const instance = await WebViewer({
-            path: '/lib/pdf', // Fix: The correct path without 'public' prefix
-            initialDoc: fileUrl,
-            licenseKey: 'demo:1684564031726:7c0ee9b10300000000d33b723d1b0f99eb12bc7f1a206911e23bcb3ce9', // Demo key
-          }, viewerDivRef.current);
-          
-          setViewerInstance(instance);
-          
-          // Clean up the blob URL when the viewer is loaded
-          instance.Core.documentViewer.addEventListener('documentLoaded', () => {
-            URL.revokeObjectURL(fileUrl);
-          });
-        } catch (error) {
-          console.error('Error initializing PDF viewer:', error);
-          toast({
-            title: "Viewer Error",
-            description: "Could not initialize the PDF preview. You can still download the file.",
-            variant: "destructive",
-          });
-        }
-      };
-      
-      initializeViewer();
-      
-      // Clean up function
-      return () => {
-        if (viewerInstance) {
-          viewerInstance.Core.documentViewer.closeDocument();
-        }
-      };
-    }
-  }, [resultFile, showPreview]);
-
   return (
     <>
       <Navbar />
@@ -205,10 +160,7 @@ const ExtractPages = () => {
                   
                   {showPreview && (
                     <div className="border rounded-md overflow-hidden">
-                      <div 
-                        ref={viewerDivRef} 
-                        className="h-[500px] w-full"
-                      />
+                      <CustomPDFViewer file={resultFile} />
                     </div>
                   )}
                 </div>
