@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,7 +13,12 @@ import { processFile } from '@/utils/fileProcessing';
 import { useAuth } from '@/contexts/AuthContext';
 import PremiumModal from '@/components/shared/PremiumModal';
 import { motion } from 'framer-motion';
-import CustomPDFViewer from '@/components/pdf/CustomPDFViewer';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+
+// Set workerSrc to a CDN URL that's more reliable than unpkg
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 const ExtractPages = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -22,6 +27,9 @@ const ExtractPages = () => {
   const [selectedPages, setSelectedPages] = useState<number[]>([]);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAuthenticated, hasAvailableTrials, increaseTrialCount } = useAuth();
@@ -30,6 +38,12 @@ const ExtractPages = () => {
     setFile(selectedFile);
     setResultFile(null);
     setSelectedPages([]);
+    
+    // Create object URL for the PDF file
+    if (selectedFile) {
+      const url = URL.createObjectURL(selectedFile);
+      setFileUrl(url);
+    }
   };
 
   const handleExtractPages = async (pageNumbers: number[]) => {
@@ -69,6 +83,12 @@ const ExtractPages = () => {
       const result = await processFile('extract-pages', [file], { pages: pageNumbers });
       setResultFile(result);
       
+      // Create object URL for the result file
+      if (result) {
+        const url = URL.createObjectURL(result);
+        setFileUrl(url);
+      }
+      
       toast({
         title: "Pages Successfully Extracted",
         description: `${pageNumbers.length} page(s) have been extracted from your PDF.`,
@@ -102,6 +122,13 @@ const ExtractPages = () => {
       });
     }
   };
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+  };
+
+  const prevPage = () => setPageNumber(page => (page <= 1 ? 1 : page - 1));
+  const nextPage = () => setPageNumber(page => (page >= (numPages || 1) ? (numPages || 1) : page + 1));
 
   return (
     <>
@@ -158,9 +185,43 @@ const ExtractPages = () => {
                     {showPreview ? 'Hide Preview' : 'Show Preview'}
                   </Button>
                   
-                  {showPreview && (
-                    <div className="border rounded-md overflow-hidden">
-                      <CustomPDFViewer file={resultFile} />
+                  {showPreview && fileUrl && (
+                    <div className="border rounded-md overflow-hidden p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={prevPage} 
+                          disabled={pageNumber <= 1}
+                        >
+                          Previous
+                        </Button>
+                        <span>Page {pageNumber} of {numPages || '?'}</span>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={nextPage} 
+                          disabled={!numPages || pageNumber >= numPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                      <div className="flex justify-center bg-gray-50 dark:bg-gray-800 p-4 rounded-md">
+                        <Document
+                          file={fileUrl}
+                          onLoadSuccess={onDocumentLoadSuccess}
+                          loading={<div className="flex justify-center"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div></div>}
+                          error={<div className="text-center text-red-500">Failed to load PDF. Please try again.</div>}
+                          externalLinkTarget="_blank"
+                        >
+                          <Page 
+                            pageNumber={pageNumber} 
+                            renderTextLayer={false}
+                            renderAnnotationLayer={false}
+                            className="mx-auto"
+                          />
+                        </Document>
+                      </div>
                     </div>
                   )}
                 </div>
